@@ -42,39 +42,41 @@ def complement(nan_slices):
     return (slice(None), slice(None), slice(st.stop, None))
 
 
-# create the matrix of snapshots
-# nb. array, not matrix
-X = to_snaps(run.Uf_[complement(find_nan_slice(run.Uf_[:]))])
+def to_matlab(run):
+    # create the matrix of snapshots
+    # nb. array, not matrix
+    # has to be complex double or matlab throws a sparse horzcat problem
+    X = to_snaps(run.Uf_[complement(find_nan_slice(run.Uf_[:]))]).astype(np.float64).astype(np.complex)
 
-X0 = X[:, :-1]
-X1 = X[:, 1:]
+    X0 = X[:, :-1]
+    X1 = X[:, 1:]
 
-# economy size SVD of X0
-U, S, V = lin.svd(X0, full_matrices=False)
-## n.b. differences with matlab svd:
-## 1. S is a 1d array of diagonal elements
-## 2.
+    # economy size SVD of X0
+    U, S, V = lin.svd(X0, full_matrices=False)
+    ## n.b. differences with matlab svd:
+    ## 1. S is a 1d array of diagonal elements
+    ## 2.
 
-# rank of S (np.rank doesn't get it... the rank is the number of
-# independent vectors, which has to be the length of a diagonal
-# matrix) should be equal to X.shape[0]
-r = S.size
-# now actually form the diagonal matrix
-S = np.diag(S)
+    # rank of S (np.rank doesn't get it... the rank is the number of
+    # independent vectors, which has to be the length of a diagonal
+    # matrix) should be equal to X.shape[0]
+    r = S.size
+    # now actually form the diagonal matrix
+    S = np.diag(S)
 
-# Truncated versions of U, S, and V
-# TODO is this actually necessary? is S not already rxr?
-# maybe necessary if S isn't nonzero all the way along the diagonal
-# U = U[:, :r]
-# S = S[:r, :r]
-# V = V[:, :r]
+    # Truncated versions of U, S, and V
+    # TODO is this actually necessary? is S not already rxr?
+    # maybe necessary if S isn't nonzero all the way along the diagonal
+    # U = U[:, :r]
+    # S = S[:r, :r]
+    # V = V[:, :r]
 
-# Determine matrix UstarX1
-UstarX1 = np.dot(U.T.conj(), X1)   # conjugate transpose of U  (U' in matlab)
+    # Determine matrix UstarX1
+    UstarX1 = np.dot(U.T.conj(), X1)   # conjugate transpose of U  (U' in matlab)
 
-data = {'UstarX1': UstarX1,
-        'S':       S,
-        'V':       V,
-        'dT':      0.015}  # TODO: get this from run
+    data = {'UstarX1': UstarX1,
+            'S':       S,
+            'V':       V,
+            'dT':      1}  # TODO: get this from run
 
-scipy.io.savemat('data.mat', data)
+    scipy.io.savemat('data.mat', data)
