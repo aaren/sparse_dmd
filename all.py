@@ -68,7 +68,6 @@ options = {'rho': 1,
            'eps_abs': 1E-6,
            'eps_rel': 1E-4}
 
-# dmdsp(P, q, s, gammaval, options)
 
 
 ###
@@ -117,53 +116,53 @@ def dmdsp(P, q, s, gammaval, options=None):
 
     # % Allocate memory for gamma-dependent output variables
     ng = len(gammaval)
-    answer = {}
-    answer['gamma'] = gammaval
-    answer['Nz']    = zeros((1, ng));  # number of non-zero amplitudes
-    answer['Jsp']   = zeros((1, ng));  # square of Frobenius norm (before polishing)
-    answer['Jpol']  = zeros((1, ng));  # square of Frobenius norm (after polishing)
-    answer['Ploss'] = zeros((1, ng));  # optimal performance loss (after polishing)
-    answer['xsp']   = zeros((n, ng));  # vector of amplitudes (before polishing)
-    answer['xpol']  = zeros((n, ng));  # vector of amplitudes (after polishing)
+    answer = {
+        'gamma': gammaval,
+        'Nz':    np.zeros((1, ng)),  # number of non-zero amplitudes
+        'Jsp':   np.zeros((1, ng)),  # square of Frobenius norm (before polishing)
+        'Jpol':  np.zeros((1, ng)),  # square of Frobenius norm (after polishing)
+        'Ploss': np.zeros((1, ng)),  # optimal performance loss (after polishing)
+        'xsp':   np.zeros((n, ng)),  # vector of amplitudes (before polishing)
+        'xpol':  np.zeros((n, ng)),  # vector of amplitudes (after polishing)
+    }
 
     # Cholesky factorization of matrix P + (rho/2)*I
-    Prho = P + (rho / 2) * I
+    Prho = P + (rho / 2.) * I
     Plow = linalg.cholesky(Prho, lower=True)
     Plow_star = Plow.T.conj()
 
     for i, gamma in enumerate(gammaval):
 
         # Initial conditions
-        y = np.zeros((n , 1))  # Lagrange multiplier
-        z = np.zeros((n , 1))
+        y = np.zeros((n, 1))  # Lagrange multiplier
+        z = np.zeros((n, 1))
 
         # Use ADMM to solve the gamma-parameterized problem
-        for ADMMstep = 1 : Max_ADMM_Iter,
-
+        for ADMMstep in range(Max_ADMM_Iter):
             # x-minimization step
             u = z - (1 / rho) * y
             # TODO: solve or lstsq?
-            xnew = linalg.solve(Plow_star, linalg.lstsq(Plow,
-                                                        q + (rho/2) * u))
+            xnew = linalg.solve(Plow_star,
+                                linalg.solve(Plow,
+                                             q[:, None] + (rho / 2.) * u))
 
             # z-minimization step
-            a = (gamma / rho) * np.ones((n , 1))
+            a = (gamma / rho) * np.ones((n, 1))
             v = xnew + (1 / rho) * y
             # Soft-thresholding of v
-            # TODO: what shape should znew be?
-            znew = ( (1 - a / abs(v)) * v ) * (abs(v) > a)
+            znew = ((1 - a / abs(v)) * v) * (abs(v) > a)
 
             # Primal and dual residuals
             res_prim = linalg.norm(xnew - znew)
-            res_dual = rho * norm(znew - z)
+            res_dual = rho * linalg.norm(znew - z)
 
             # Lagrange multiplier update step
             y = y + rho * (xnew - znew)
 
             # Stopping criteria
-            eps_prim = np.sqrt(n) * eps_abs + eps_rel * max([norm(xnew),
-                                                             norm(znew)])
-            eps_dual = np.sqrt(n) * eps_abs + eps_rel * norm(y)
+            eps_prim = np.sqrt(n) * eps_abs + eps_rel * max([linalg.norm(xnew),
+                                                             linalg.norm(znew)])
+            eps_dual = np.sqrt(n) * eps_abs + eps_rel * linalg.norm(y)
 
             if (res_prim < eps_prim) & (res_dual < eps_dual):
                 break
@@ -171,22 +170,28 @@ def dmdsp(P, q, s, gammaval, options=None):
                 z = znew
 
         # Record output data
-        answer.xsp(:,i) = z; % vector of amplitudes
-        answer.Nz(i) = nnz(answer.xsp(:,i)); % number of non-zero amplitudes
-        answer.Jsp(i) = real(z'*P*z) - 2*real(q'*z) + s; % Frobenius norm (before polishing)
+        answer['xsp'][:, i] = z.squeeze()  # vector of amplitudes
+        answer['Nz'][:, i] = (z != 0).sum()  # number of non-zero amplitudes
+        # Frobenius norm (before polishing)
+        answer['Jsp'][:, i] = np.dot(np.dot(z.T.conj(), P), z).real \
+                         - 2 * np.dot(q.T.conj(), z).real \
+                         + s
 
         # Polishing of the nonzero amplitudes
         # Form the constraint matrix E for E^T x = 0
-        ind_zero = np.where(abs(z) < 1E-12);  # find indices of zero elements of z
-        m = len(ind_zero); % number of zero elements
-        E = I[:, ind_zero]
-        E = sparse(E)
+        ind_zero = np.where(abs(z.squeeze()) < 1E-12)  # indices of zero elements of z
+        m = len(ind_zero[0])  # number of zero elements
+        E = I[:, ind_zero].squeeze()
+        # TODO: how do we do sparse?
+        # why do we even bother??
+        # import scipy.sparse
+        # E = scipy.sparse.coo_matrix(E)
 
         # Form KKT system for the optimality conditions
-        KKT = np.vstack(np.hstack(P, E),
-                        np.hstack(E.T.conj(), np.zeros((m, m)))
-                        )
-        rhs = np.vstack(q, zeros((m, 1)))
+        KKT = np.vstack((np.hstack((P, E)),
+                        np.hstack((E.T.conj(), np.zeros((m, m))))
+                         ))
+        rhs = np.vstack((q[:, None], np.zeros((m, 1))))
 
         # Solve KKT system
         sol = linalg.solve(KKT, rhs)
@@ -194,9 +199,16 @@ def dmdsp(P, q, s, gammaval, options=None):
         # Vector of polished (optimal) amplitudes
         xpol = sol[:n]
 
-        % Record output data
-        answer.xpol(:,i) = xpol
-        % Polished (optimal) least-squares residual
-        answer.Jpol(i) = real(xpol'*P*xpol) - 2*real(q'*xpol) + s
-        % Polished (optimal) performance loss
-        answer.Ploss(i) = 100*sqrt(answer.Jpol(i)/s)
+        # Record output data
+        answer['xpol'][:, i] = xpol.squeeze()
+        # Polished (optimal) least-squares residual
+        answer['Jpol'][:, i] = np.dot(np.dot(xpol.T.conj(), P), xpol).real \
+                             - 2 * np.dot(q.T.conj(), xpol).real \
+                             + s
+        # Polished (optimal) performance loss
+        answer['Ploss'][:, i] = 100 * np.sqrt(answer['Jpol'][:, i] / s)
+
+        return answer
+
+
+answer = dmdsp(P, q, s, gammaval, options)
