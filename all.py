@@ -122,8 +122,8 @@ def dmdsp(P, q, s, gammaval, options=None):
         'Jsp':   np.zeros((1, ng)),  # square of Frobenius norm (before polishing)
         'Jpol':  np.zeros((1, ng)),  # square of Frobenius norm (after polishing)
         'Ploss': np.zeros((1, ng)),  # optimal performance loss (after polishing)
-        'xsp':   np.zeros((n, ng)),  # vector of amplitudes (before polishing)
-        'xpol':  np.zeros((n, ng)),  # vector of amplitudes (after polishing)
+        'xsp':   np.zeros((n, ng), dtype=np.complex),  # vector of amplitudes (before polishing)
+        'xpol':  np.zeros((n, ng), dtype=np.complex),  # vector of amplitudes (after polishing)
     }
 
     # Cholesky factorization of matrix P + (rho/2)*I
@@ -208,7 +208,7 @@ def dmdsp(P, q, s, gammaval, options=None):
         # Polished (optimal) performance loss
         answer['Ploss'][:, i] = 100 * np.sqrt(answer['Jpol'][:, i] / s)
 
-        return answer
+    return answer
 
 
 answer = dmdsp(P, q, s, gammaval, options)
