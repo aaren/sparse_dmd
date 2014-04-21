@@ -23,10 +23,15 @@ def create_snapshots():
     scipy.io.savemat('snapshots.mat', mat_dict)
 
 
+def create_answer(n=200):
+    answer = all_dmdsp.run_dmdsp(gamma_grd=n)
+    scipy.io.savemat('tests/answer.mat', answer)
+
+
 def test_compare_outputs():
     """Compare the python output with the matlab output.
     They should be identical."""
-    py_answer = all_dmdsp.run_dmdsp()
+    py_answer = all_dmdsp.run_dmdsp(gamma_grd=20)
 
     mat_answer = scipy.io.loadmat('tests/answer.mat')
 

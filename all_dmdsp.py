@@ -45,7 +45,7 @@ def dmd_reduction(snapshots):
     return data
 
 
-def run_dmdsp():
+def run_dmdsp(gamma_grd=200):
     channel_mat = 'matlab/codes/channel/channel.mat'
 
     mat_dict = scipy.io.loadmat(channel_mat)
@@ -56,7 +56,6 @@ def run_dmdsp():
 
     # Sparsity-promoting parameter gamma
     # Lower and upper bounds relevant for this flow type
-    gamma_grd = 200
     gammaval = np.logspace(np.log10(0.15), np.log10(160), gamma_grd)
 
     Vstar = V.T.conj()
