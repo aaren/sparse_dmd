@@ -9,6 +9,42 @@ import scipy.linalg as linalg
 import scipy.io
 
 
+def dmd_reduction(snapshots):
+    X0 = snapshots[:, :-1]
+    X1 = snapshots[:, 1:]
+
+    # economy size SVD of X0
+    U, S, Vh = linalg.svd(X0, full_matrices=False)
+    ## n.b. differences with matlab svd:
+    ## 1. S is a 1d array of diagonal elements
+    ## 2. Vh == V': the matlab version returns V for X = U S V',
+    ##    whereas python returns V'
+    V = Vh.T.conj()
+
+    # rank of S (np.rank doesn't get it... the rank is the number of
+    # independent vectors, which has to be the length of a diagonal
+    # matrix) should be equal to X.shape[0]
+    r = S.size
+    # now actually form the diagonal matrix
+    S = np.diag(S)
+
+    # Truncated versions of U, S, and V
+    # TODO is this actually necessary? is S not already rxr?
+    # maybe necessary if S isn't nonzero all the way along the diagonal
+    # U = U[:, :r]
+    # S = S[:r, :r]
+    # V = V[:, :r]
+
+    # Determine matrix UstarX1
+    UstarX1 = np.dot(U.T.conj(), X1)   # conjugate transpose of U  (U' in matlab)
+
+    data = {'UstarX1': UstarX1,
+            'S':       S,
+            'V':       V}
+
+    return data
+
+
 def run_dmdsp():
     channel_mat = 'matlab/codes/channel/channel.mat'
 
