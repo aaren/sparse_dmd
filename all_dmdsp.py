@@ -19,24 +19,11 @@ def dmd_reduction(snapshots):
     ## 1. S is a 1d array of diagonal elements
     ## 2. Vh == V': the matlab version returns V for X = U S V',
     ##    whereas python returns V'
+    S = np.diag(S)
     V = Vh.T.conj()
 
-    # rank of S (np.rank doesn't get it... the rank is the number of
-    # independent vectors, which has to be the length of a diagonal
-    # matrix) should be equal to X.shape[0]
-    r = S.size
-    # now actually form the diagonal matrix
-    S = np.diag(S)
-
-    # Truncated versions of U, S, and V
-    # TODO is this actually necessary? is S not already rxr?
-    # maybe necessary if S isn't nonzero all the way along the diagonal
-    # U = U[:, :r]
-    # S = S[:r, :r]
-    # V = V[:, :r]
-
     # Determine matrix UstarX1
-    UstarX1 = np.dot(U.T.conj(), X1)   # conjugate transpose of U  (U' in matlab)
+    UstarX1 = np.dot(U.T.conj(), X1)   # conjugate transpose (U' in matlab)
 
     data = {'UstarX1': UstarX1,
             'S':       S,
@@ -66,12 +53,9 @@ def run_dmdsp(gamma_grd=200):
     # Optimal DMD matrix resulting from Schmid's 2010 algorithm
     # Fdmd = U'*X1*V*inv(S)
     Fdmd = np.dot(np.dot(UstarX1, V), linalg.inv(S))
-    # Determine the rank of Fdmd
-    r = np.diag(Fdmd).size
 
-    # E-value decomposition of Fdmd
+    # eigenvalue decomposition of Fdmd
     Edmd, Ydmd = linalg.eig(Fdmd)
-    Ddmd = np.diag(Edmd)
 
     # Form Vandermonde matrix
     # Vand = Edmd ** np.arange(N)[None].T
@@ -94,10 +78,10 @@ def run_dmdsp(gamma_grd=200):
     s = np.trace(np.dot(G.T.conj(), G))
 
     # Cholesky factorization of P
-    Pl = linalg.cholesky(P, lower=True)
+    # Pl = linalg.cholesky(P, lower=True)
 
     # Optimal vector of amplitudes xdmd
-    xdmd = linalg.solve(Pl.T.conj(), linalg.solve(Pl, q))
+    # xdmd = linalg.solve(Pl.T.conj(), linalg.solve(Pl, q))
 
     options = {'rho': 1,
                'maxiter': 10000,
