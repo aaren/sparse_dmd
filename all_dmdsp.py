@@ -8,74 +8,71 @@ import numpy as np
 import scipy.linalg as linalg
 import scipy.io
 
-channel_mat = 'matlab/codes/channel/channel.mat'
 
-mat_dict = scipy.io.loadmat(channel_mat)
+def run_dmdsp():
+    channel_mat = 'matlab/codes/channel/channel.mat'
 
-UstarX1 = mat_dict['UstarX1']
-S = mat_dict['S']
-V = mat_dict['V']
+    mat_dict = scipy.io.loadmat(channel_mat)
 
-# Sparsity-promoting parameter gamma
-# Lower and upper bounds relevant for this flow type
-gamma_grd = 200
-gammaval = np.logspace(np.log10(0.15), np.log10(160), gamma_grd)
+    UstarX1 = mat_dict['UstarX1']
+    S = mat_dict['S']
+    V = mat_dict['V']
 
-Vstar = V.T.conj()
+    # Sparsity-promoting parameter gamma
+    # Lower and upper bounds relevant for this flow type
+    gamma_grd = 200
+    gammaval = np.logspace(np.log10(0.15), np.log10(160), gamma_grd)
 
-# The number of snapshots
-N = Vstar.shape[1]
+    Vstar = V.T.conj()
 
+    # The number of snapshots
+    N = Vstar.shape[1]
 
-# Optimal DMD matrix resulting from Schmid's 2010 algorithm
-# Fdmd = U'*X1*V*inv(S)
-Fdmd = np.dot(np.dot(UstarX1, V), linalg.inv(S))
-# Determine the rank of Fdmd
-r = np.diag(Fdmd).size
+    # Optimal DMD matrix resulting from Schmid's 2010 algorithm
+    # Fdmd = U'*X1*V*inv(S)
+    Fdmd = np.dot(np.dot(UstarX1, V), linalg.inv(S))
+    # Determine the rank of Fdmd
+    r = np.diag(Fdmd).size
 
-# E-value decomposition of Fdmd
-Edmd, Ydmd = linalg.eig(Fdmd)
-Ddmd = np.diag(Edmd)
+    # E-value decomposition of Fdmd
+    Edmd, Ydmd = linalg.eig(Fdmd)
+    Ddmd = np.diag(Edmd)
 
-# Form Vandermonde matrix
-# Vand = Edmd ** np.arange(N)[None].T
-Vand = np.vander(Edmd, N).T[::-1].T
+    # Form Vandermonde matrix
+    # Vand = Edmd ** np.arange(N)[None].T
+    Vand = np.vander(Edmd, N).T[::-1].T
 
-# Determine optimal vector of amplitudes xdmd
-# Objective: minimize the least-squares deviation between
-# the matrix of snapshots X0 and the linear combination of the dmd modes
-# Can be formulated as:
-# minimize || G - L*diag(xdmd)*R ||_F^2
-L = Ydmd
-R = Vand
-G = np.dot(S, Vstar)
+    # Determine optimal vector of amplitudes xdmd
+    # Objective: minimize the least-squares deviation between
+    # the matrix of snapshots X0 and the linear combination of the dmd modes
+    # Can be formulated as:
+    # minimize || G - L*diag(xdmd)*R ||_F^2
+    L = Ydmd
+    R = Vand
+    G = np.dot(S, Vstar)
 
-# Form matrix P, vector q, and scalar s
-# J = x'*P*x - q'*x - x'*q + s
-# x - optimization variable (i.e., the unknown vector of amplitudes)
-P = np.dot(L.T.conj(), L) * np.dot(R, R.T.conj()).conj()
-q = np.diagonal(np.dot(np.dot(R, G.T.conj()), L)).conj()
-s = np.trace(np.dot(G.T.conj(), G))
+    # Form matrix P, vector q, and scalar s
+    # J = x'*P*x - q'*x - x'*q + s
+    # x - optimization variable (i.e., the unknown vector of amplitudes)
+    P = np.dot(L.T.conj(), L) * np.dot(R, R.T.conj()).conj()
+    q = np.diagonal(np.dot(np.dot(R, G.T.conj()), L)).conj()
+    s = np.trace(np.dot(G.T.conj(), G))
 
-# Cholesky factorization of P
-Pl = linalg.cholesky(P, lower=True)
+    # Cholesky factorization of P
+    Pl = linalg.cholesky(P, lower=True)
 
-# Optimal vector of amplitudes xdmd
-xdmd = linalg.solve(Pl.T.conj(), linalg.solve(Pl, q))
+    # Optimal vector of amplitudes xdmd
+    xdmd = linalg.solve(Pl.T.conj(), linalg.solve(Pl, q))
 
-options = {'rho': 1,
-           'maxiter': 10000,
-           'eps_abs': 1E-6,
-           'eps_rel': 1E-4}
+    options = {'rho': 1,
+               'maxiter': 10000,
+               'eps_abs': 1E-6,
+               'eps_rel': 1E-4}
 
+    answer = dmdsp(P, q, s, gammaval, options)
 
+    return answer
 
-###
-# end run_dmdsp
-
-#### verified up to here! (use ipython)
-
-# start dmdsp
 
 def dmdsp(P, q, s, gammaval, options=None):
     """Inputs:  matrix P
@@ -119,9 +116,9 @@ def dmdsp(P, q, s, gammaval, options=None):
     answer = {
         'gamma': gammaval,
         'Nz':    np.zeros((1, ng)),  # number of non-zero amplitudes
-        'Jsp':   np.zeros((1, ng)),  # square of Frobenius norm (before polishing)
-        'Jpol':  np.zeros((1, ng)),  # square of Frobenius norm (after polishing)
-        'Ploss': np.zeros((1, ng)),  # optimal performance loss (after polishing)
+        'Jsp':   np.zeros((1, ng), dtype=np.complex),  # square of Frobenius norm (before polishing)
+        'Jpol':  np.zeros((1, ng), dtype=np.complex),  # square of Frobenius norm (after polishing)
+        'Ploss': np.zeros((1, ng), dtype=np.complex),  # optimal performance loss (after polishing)
         'xsp':   np.zeros((n, ng), dtype=np.complex),  # vector of amplitudes (before polishing)
         'xpol':  np.zeros((n, ng), dtype=np.complex),  # vector of amplitudes (after polishing)
     }
@@ -132,7 +129,6 @@ def dmdsp(P, q, s, gammaval, options=None):
     Plow_star = Plow.T.conj()
 
     for i, gamma in enumerate(gammaval):
-
         # Initial conditions
         y = np.zeros((n, 1))  # Lagrange multiplier
         z = np.zeros((n, 1))
@@ -174,8 +170,8 @@ def dmdsp(P, q, s, gammaval, options=None):
         answer['Nz'][:, i] = (z != 0).sum()  # number of non-zero amplitudes
         # Frobenius norm (before polishing)
         answer['Jsp'][:, i] = np.dot(np.dot(z.T.conj(), P), z).real \
-                         - 2 * np.dot(q.T.conj(), z).real \
-                         + s
+                              - 2 * np.dot(q.T.conj(), z).real \
+                              + s
 
         # Polishing of the nonzero amplitudes
         # Form the constraint matrix E for E^T x = 0
@@ -189,7 +185,7 @@ def dmdsp(P, q, s, gammaval, options=None):
 
         # Form KKT system for the optimality conditions
         KKT = np.vstack((np.hstack((P, E)),
-                        np.hstack((E.T.conj(), np.zeros((m, m))))
+                         np.hstack((E.T.conj(), np.zeros((m, m))))
                          ))
         rhs = np.vstack((q[:, None], np.zeros((m, 1))))
 
@@ -203,12 +199,9 @@ def dmdsp(P, q, s, gammaval, options=None):
         answer['xpol'][:, i] = xpol.squeeze()
         # Polished (optimal) least-squares residual
         answer['Jpol'][:, i] = np.dot(np.dot(xpol.T.conj(), P), xpol).real \
-                             - 2 * np.dot(q.T.conj(), xpol).real \
-                             + s
+                               - 2 * np.dot(q.T.conj(), xpol).real \
+                               + s
         # Polished (optimal) performance loss
         answer['Ploss'][:, i] = 100 * np.sqrt(answer['Jpol'][:, i] / s)
 
     return answer
-
-
-answer = dmdsp(P, q, s, gammaval, options)
