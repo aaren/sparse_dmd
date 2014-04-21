@@ -77,18 +77,19 @@ def run_dmdsp(gamma_grd=200):
     q = np.diagonal(np.dot(np.dot(R, G.T.conj()), L)).conj()
     s = np.trace(np.dot(G.T.conj(), G))
 
-    # Cholesky factorization of P
-    # Pl = linalg.cholesky(P, lower=True)
-
-    # Optimal vector of amplitudes xdmd
-    # xdmd = linalg.solve(Pl.T.conj(), linalg.solve(Pl, q))
-
     options = {'rho': 1,
                'maxiter': 10000,
                'eps_abs': 1E-6,
                'eps_rel': 1E-4}
 
     answer = dmdsp(P, q, s, gammaval, options)
+
+    # Cholesky factorization of P
+    Pl = linalg.cholesky(P, lower=True)
+    # Optimal vector of amplitudes xdmd
+    xdmd = linalg.solve(Pl.T.conj(), linalg.solve(Pl, q))
+
+    answer['xdmd'] = xdmd
 
     return answer
 
