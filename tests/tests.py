@@ -49,6 +49,8 @@ def test_compare_outputs():
                                                             S,
                                                             V,
                                                             gammaval)
+    # convert namedtuple to dict
+    py_answer = py_answer.__dict__
 
     ## matlab output created by running matlab:
     ## [Fdmd, Edmd, Ydmd, xdmd, answer] = run_dmdsp;
@@ -95,7 +97,7 @@ def test_compare_inputs():
     snapshots = scipy.io.loadmat('tests/snapshots.mat')['snapshots']
 
     # compute the python reduction
-    py_data = all_dmdsp.dmd_reduction(snapshots)
+    py_data = all_dmdsp.SparseDMD.dmd_reduction(snapshots)
 
     # load reference matlab output
     mat_data = scipy.io.loadmat('tests/reference.mat')
