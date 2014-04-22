@@ -6,10 +6,26 @@
 import numpy as np
 
 import scipy.linalg as linalg
-import scipy.io
 
 
 def dmd_reduction(snapshots):
+    """Takes a series of snapshots and splits into two subsequent
+    series, X0, X1, where
+
+        snapshots = [X0, X1[-1]]
+
+    then computes the (economy) single value decomposition
+
+        X0 = U S V*
+
+    returning
+
+        U* X1  - the right singular vectors (POD modes)
+                 projected onto the data
+        S      - the singular values
+        V      - the left singular vectors
+    """
+
     X0 = snapshots[:, :-1]
     X1 = snapshots[:, 1:]
 
@@ -32,19 +48,18 @@ def dmd_reduction(snapshots):
     return data
 
 
-def run_dmdsp(gamma_grd=200):
-    channel_mat = 'matlab/codes/channel/channel.mat'
+def run_dmdsp(UstarX1, S, V, gammaval):
+    """
+    Inputs: matrices U'*X1, S, and V (for a specified flow type)
 
-    mat_dict = scipy.io.loadmat(channel_mat)
+    Outputs:
 
-    UstarX1 = mat_dict['UstarX1']
-    S = mat_dict['S']
-    V = mat_dict['V']
-
-    # Sparsity-promoting parameter gamma
-    # Lower and upper bounds relevant for this flow type
-    gammaval = np.logspace(np.log10(0.15), np.log10(160), gamma_grd)
-
+    Fdmd - optimal matrix on the subspace spanned by the POD modes U of X0
+    Edmd - eigenvalues of Fdmd
+    Ydmd - eigenvectors of Fdmd
+    xdmd - optimal vector of DMD amplitudes
+    answer - gamma-parameterized structure containing output of dmdsp
+    """
     Vstar = V.T.conj()
 
     # The number of snapshots
@@ -89,9 +104,7 @@ def run_dmdsp(gamma_grd=200):
     # Optimal vector of amplitudes xdmd
     xdmd = linalg.solve(Pl.T.conj(), linalg.solve(Pl, q))
 
-    answer['xdmd'] = xdmd
-
-    return answer
+    return Fdmd, Edmd, Ydmd, xdmd, answer
 
 
 def dmdsp(P, q, s, gammaval, options=None):

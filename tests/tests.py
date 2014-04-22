@@ -1,6 +1,7 @@
 import numpy.testing as nt
 
 import scipy.io
+import numpy as np
 
 import all_dmdsp
 
@@ -31,13 +32,49 @@ def create_answer(n=200):
 def test_compare_outputs():
     """Compare the python output with the matlab output.
     They should be identical."""
-    py_answer = all_dmdsp.run_dmdsp(gamma_grd=20)
+    channel_mat = 'matlab/codes/channel/channel.mat'
 
+    mat_dict = scipy.io.loadmat(channel_mat)
+
+    UstarX1 = mat_dict['UstarX1']
+    S = mat_dict['S']
+    V = mat_dict['V']
+
+    # Sparsity-promoting parameter gamma
+    # Lower and upper bounds relevant for this flow type
+    gamma_grd = 20
+    gammaval = np.logspace(np.log10(0.15), np.log10(160), gamma_grd)
+
+    Fdmd, Edmd, Ydmd, xdmd, py_answer = all_dmdsp.run_dmdsp(UstarX1,
+                                                            S,
+                                                            V,
+                                                            gammaval)
+
+    ## matlab output created by running matlab:
+    ## [Fdmd, Edmd, Ydmd, xdmd, answer] = run_dmdsp;
+    ## output = struct('Fdmd', Fdmd, 'Edmd', Edmd, 'Ydmd', Ydmd, 'xdmd', xdmd);
+    ## save('tests/answer.mat', '-struct', 'answer')
+    ## save('tests/output.mat', '-struct', 'output')
+    ## using channel=1 and 20 gridpoints for gamma
+
+    # using two different .mat because scipy doesn't seem to like
+    # nested structs
     mat_answer = scipy.io.loadmat('tests/answer.mat')
+    mat_output = scipy.io.loadmat('tests/output.mat')
 
     for k in py_answer:
+        print k
         nt.assert_array_almost_equal(py_answer[k].squeeze(),
-                                     mat_answer[k].squeeze())
+                                     mat_answer[k].squeeze(),
+                                     decimal=5)
+
+    py_output = {'Fdmd': Fdmd, 'Edmd': Edmd, 'Ydmd': Ydmd, 'xdmd': xdmd}
+
+    for k in py_output:
+        print k
+        nt.assert_array_almost_equal(py_output[k].squeeze(),
+                                     mat_output[k].squeeze(),
+                                     decimal=5)
 
 
 def test_compare_inputs():
