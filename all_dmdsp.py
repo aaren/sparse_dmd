@@ -87,7 +87,7 @@ class SparseDMD(object):
 
         # Form Vandermonde matrix
         # Vand = Edmd ** np.arange(N)[None].T
-        Vand = np.vander(self.Edmd, N).T[::-1].T
+        self.Vand = np.vander(self.Edmd, N).T[::-1].T
 
         # Determine optimal vector of amplitudes xdmd
         # Objective: minimize the least-squares deviation between
@@ -96,7 +96,7 @@ class SparseDMD(object):
         # Can be formulated as:
         # minimize || G - L*diag(xdmd)*R ||_F^2
         L = self.Ydmd
-        R = Vand
+        R = self.Vand
         G = np.dot(self.S, Vstar)
 
         # Form matrix P, vector q, and scalar s, where
@@ -356,6 +356,59 @@ class SparseDMD(object):
                 'Jpol':  polished_residual,
                 'Ploss': polished_performance_loss,
                 }
+
+    def sparse_reconstruction(self, Ni, shape=None, decomp_axis=1):
+        """Reconstruct the snapshots using a given number of modes.
+
+        Ni is the index that gives the desired number of
+        modes in `self.answer.Nz`.
+
+        shape is the shape of the original data. If None (default),
+        the reconstructed snapshots will be returned; otherwise the
+        snapshots will be reshaped to the original data dimensions,
+        assuming that they were decomposed along axis `decomp_axis`.
+        """
+        # FIXME: check that we're multiplying things in the right
+        # order. Is the vandermode matrix the right way up for this?
+        amplitudes = self.answer.xpol[:, Ni]
+        modes = self.modes
+        time_series = self.Vand
+
+        snapshot_reconstruction = np.dot(modes, time_series) * amplitudes
+
+        if shape is not None:
+            data_reconstruction = self.to_data(snapshot_reconstruction, shape,
+                                               decomp_axis)
+            return data_reconstruction
+        else:
+            return snapshot_reconstruction
+
+    @staticmethod
+    def to_snaps(data, decomp_axis=-1):
+        """Transform data into snapshots, using decomp_axis as
+        the decomposition axis.
+        """
+        sd = data.shape[decomp_axis]   # size of the decomp axis
+        shape_idx = range(len(data.shape))
+        # we reset the value of decomp_axis to allow indexing with -1
+        decomp_axis = shape_idx.pop(decomp_axis)
+        # put the decomp axis last and reshape to 2d array
+        return data.transpose(shape_idx + [decomp_axis]).reshape((-1, sd))
+
+    @staticmethod
+    def to_data(snapshots, shape, decomp_axis=-1):
+        """Reshape snapshots or modes to match data that
+        had a `shape` and that was decomposed along `decomp_axis`.
+        """
+        shape = list(shape)
+        shape.pop(decomp_axis)  # remove decomp axis (it is implicitly last)
+        reshaped = np.asarray(snapshots).reshape(shape + [-1])
+
+        rshape = list(reshaped.shape)
+        irshape = range(len(rshape))  # indices of array shape
+        id = irshape.pop(-1)  # pull out index of decomp axis
+        irshape.insert(decomp_axis, id)  # and insert where it came from
+        return reshaped.transpose(irshape)
 
 
 def subplot(plot_function):
