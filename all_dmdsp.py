@@ -35,14 +35,12 @@ def run_dmdsp(UstarX1, S, V, gammaval):
     return Fdmd, Edmd, Ydmd, xdmd, answer
 
 
-# TODO: compute the dmd modes by reprojecting onto the data
 class SparseDMD(object):
     def __init__(self, snapshots=None, rho=1, maxiter=10000,
                  eps_abs=1e-6, eps_rel=1e-4):
         """Sparse Dynamic Mode Decomposition, using ADMM to find a
         set of sparse optimal dynamic mode amplitudes
         """
-
         self.rho = rho
         self.max_admm_iter = maxiter
         self.eps_abs = eps_abs
@@ -50,13 +48,16 @@ class SparseDMD(object):
 
         if snapshots is not None:
             self.snapshots = snapshots
-            self.init_dmd(*self.reduction)
+            reduction = self.dmd_reduction(snapshots)
+            self.init_dmd(reduction.UstarX1, reduction.S, reduction.V)
+            # the (unit-norm) dynamic modes are the projection of
+            # the eigenvectors Y onto the POD basis U
+            self.modes = np.dot(reduction.U, self.Ydmd)
 
     @property
     def reduction(self):
         """Compute the reduced form of the data snapshots"""
-        red = self.dmd_reduction(self.snapshots)
-        return red['UstarX1'], red['S'], red['V']
+        return self.dmd_reduction(self.snapshots)
 
     def init_dmd(self, UstarX1=None, S=None, V=None):
         """Calculate the DMD matrix from the data reduction."""
@@ -144,11 +145,10 @@ class SparseDMD(object):
         # Determine matrix UstarX1
         UstarX1 = np.dot(U.T.conj(), X1)   # conjugate transpose (U' in matlab)
 
-        data = {'UstarX1': UstarX1,
-                'S':       S,
-                'V':       V}
+        reduction_keys = ('UstarX1', 'S', 'V', 'U', 'X0', 'X1')
+        Reduction = namedtuple('DMDReduction', reduction_keys)
 
-        return data
+        return Reduction(UstarX1=UstarX1, S=S, V=V, U=U, X0=X0, X1=X1)
 
     def compute_dmdsp(self, gammaval):
         self.gammaval = gammaval

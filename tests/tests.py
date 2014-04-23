@@ -65,7 +65,6 @@ def test_compare_outputs():
     mat_output = scipy.io.loadmat('tests/output.mat')
 
     for k in py_answer:
-        print k
         nt.assert_array_almost_equal(py_answer[k].squeeze(),
                                      mat_answer[k].squeeze(),
                                      decimal=5)
@@ -73,7 +72,6 @@ def test_compare_outputs():
     py_output = {'Fdmd': Fdmd, 'Edmd': Edmd, 'Ydmd': Ydmd, 'xdmd': xdmd}
 
     for k in py_output:
-        print k
         nt.assert_array_almost_equal(py_output[k].squeeze(),
                                      mat_output[k].squeeze(),
                                      decimal=5)
@@ -102,6 +100,6 @@ def test_compare_inputs():
     # load reference matlab output
     mat_data = scipy.io.loadmat('tests/reference.mat')
 
-    for k in py_data:
-        nt.assert_array_almost_equal(py_data[k].squeeze(),
+    for k in ('UstarX1', 'S', 'V'):
+        nt.assert_array_almost_equal(getattr(py_data, k).squeeze(),
                                      mat_data[k].squeeze(), decimal=3)
