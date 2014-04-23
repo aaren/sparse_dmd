@@ -152,7 +152,7 @@ class SparseDMD(object):
 
     def compute_dmdsp(self, gammaval):
         self.gammaval = gammaval
-        self.answer = self.dmdsp(gammaval)
+        self.sparse = self.dmdsp(gammaval)
 
     def dmdsp(self, gammaval):
         """Inputs:  matrix P
@@ -361,7 +361,7 @@ class SparseDMD(object):
         """Reconstruct the snapshots using a given number of modes.
 
         Ni is the index that gives the desired number of
-        modes in `self.answer.Nz`.
+        modes in `self.sparse.Nz`.
 
         shape is the shape of the original data. If None (default),
         the reconstructed snapshots will be returned; otherwise the
@@ -370,7 +370,7 @@ class SparseDMD(object):
         """
         # FIXME: check that we're multiplying things in the right
         # order. Is the vandermode matrix the right way up for this?
-        amplitudes = self.answer.xpol[:, Ni]
+        amplitudes = self.sparse.xpol[:, Ni]
         modes = self.modes
         time_series = self.Vand
 
@@ -436,7 +436,7 @@ class SparsePlots(object):
         self.Edmd = sparsedmd.Edmd
         self.Fdmd = sparsedmd.Fdmd
 
-        self.answer = sparsedmd.answer
+        self.sparse = sparsedmd.sparse
 
     @subplot
     def xdmd_frequency(self, ax):
@@ -455,27 +455,27 @@ class SparsePlots(object):
     @subplot
     def performance_loss_gamma(self, ax):
         """Performance loss for the polished vector of amplitudes vs gamma"""
-        ax.semilogx(self.answer.gamma, self.answer.Ploss, 'ko',
+        ax.semilogx(self.sparse.gamma, self.sparse.Ploss, 'ko',
                     linewidth=1, markersize=7)
         ax.set_xlabel(r'$\gamma$')
         ax.set_ylabel('performance loss (%)')
-        ax.axis([self.answer.gamma[0], self.answer.gamma[-1],
-                 0, 1.05 * self.answer.Ploss[-1]])
+        ax.axis([self.sparse.gamma[0], self.sparse.gamma[-1],
+                 0, 1.05 * self.sparse.Ploss[-1]])
 
     @subplot
     def nonzero_gamma(self, ax):
         """Number of non-zero amplitudes vs gamma"""
-        ax.semilogx(self.answer.gamma, self.answer.Nz,
+        ax.semilogx(self.sparse.gamma, self.sparse.Nz,
                     'ko', linewidth=1, markersize=7)
         ax.set_xlabel(r'$\gamma$')
         ax.set_ylabel(r'$N_z$')
-        ax.axis([self.answer.gamma[0], self.answer.gamma[-1],
-                 0, 1.05 * self.answer.Nz[0]])
+        ax.axis([self.sparse.gamma[0], self.sparse.gamma[-1],
+                 0, 1.05 * self.sparse.Nz[0]])
 
     @subplot
     def spectrum_gamma(self, ax, m=20):
         """Spectrum of DT system for a certain value of gamma"""
-        ival = np.where(self.answer.xsp[:, m])  # non zero amplitudes
+        ival = np.where(self.sparse.xsp[:, m])  # non zero amplitudes
         ax.plot(self.Edmd.real, self.Edmd.imag, 'ko',
                 self.Edmd[ival].real, self.Edmd[ival].imag, 'r+',
                 linewidth=1, markersize=7)
@@ -494,11 +494,11 @@ class SparsePlots(object):
         """|xdmd| and |xpol| vs frequency for a certain value of
         gamma amplitudes in log scale
         """
-        ival = np.where(self.answer.xsp[:, m])  # non zero amplitudes
+        ival = np.where(self.sparse.xsp[:, m])  # non zero amplitudes
         ax.semilogy(np.log(self.Edmd).imag, np.abs(self.xdmd),
                     'ko', linewidth=1, markersize=7)
         ax.semilogy(np.log(self.Edmd[ival]).imag,
-                    np.abs(self.answer.xpol[ival, m].squeeze()),
+                    np.abs(self.sparse.xpol[ival, m].squeeze()),
                     'r+', linewidth=1, markersize=7)
         ax.set_xlabel('frequency')
         ax.set_ylabel('amplitude')
@@ -509,11 +509,11 @@ class SparsePlots(object):
         """
         # we only care about the performance loss
         # when the number of modes changes
-        n_modes = self.answer.Nz
+        n_modes = self.sparse.Nz
         n_change = np.where(np.diff(n_modes))
 
-        Nz = self.answer.Nz[n_change]
-        Ploss = self.answer.Ploss[n_change]
+        Nz = self.sparse.Nz[n_change]
+        Ploss = self.sparse.Ploss[n_change]
 
         ax.plot(Nz, Ploss, 'ko')
         ax.set_xlabel('number of dmd modes')
