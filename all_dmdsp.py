@@ -200,13 +200,13 @@ class SparseDMD(object):
         empty_answer = {
             'gamma': gammaval,
             # number of non-zero amplitudes
-            'Nz':    np.zeros((1, ng)),
+            'Nz':    np.zeros(ng),
             # square of Frobenius norm (before polishing)
-            'Jsp':   np.zeros((1, ng), dtype=np.complex),
+            'Jsp':   np.zeros(ng, dtype=np.complex),
             # square of Frobenius norm (after polishing)
-            'Jpol':  np.zeros((1, ng), dtype=np.complex),
+            'Jpol':  np.zeros(ng, dtype=np.complex),
             # optimal performance loss (after polishing)
-            'Ploss': np.zeros((1, ng), dtype=np.complex),
+            'Ploss': np.zeros(ng, dtype=np.complex),
             # vector of amplitudes (before polishing)
             'xsp':   np.zeros((self.n, ng), dtype=np.complex),
             # vector of amplitudes (after polishing)
@@ -225,11 +225,12 @@ class SparseDMD(object):
             ret = self.optimize_gamma(gamma)
 
             answer.xsp[:, i] = ret['xsp']
-            answer.Nz[:, i] = ret['Nz']
-            answer.Jsp[:, i] = ret['Jsp']
             answer.xpol[:, i] = ret['xpol']
-            answer.Jpol[:, i] = ret['Jpol']
-            answer.Ploss[:, i] = ret['Ploss']
+
+            answer.Nz[i] = ret['Nz'].squeeze()
+            answer.Jsp[i] = ret['Jsp'].squeeze()
+            answer.Jpol[i] = ret['Jpol'].squeeze()
+            answer.Ploss[i] = ret['Ploss'].squeeze()
 
         return answer
 
