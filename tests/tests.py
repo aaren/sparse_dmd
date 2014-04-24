@@ -103,3 +103,67 @@ def test_compare_inputs():
     for k in ('UstarX1', 'S', 'V'):
         nt.assert_array_almost_equal(getattr(py_data, k).squeeze(),
                                      mat_data[k].squeeze(), decimal=3)
+
+
+def reconstruction():
+    """A simple test case for reconstruction of data by DMD.
+
+    A uniform field oscillating at a single frequency should have a
+    single uniform dynamic mode corresponding to the frequency.
+    """
+    t = np.arange(0, 1000)[None]
+    # choose set of frequencies well below nyquist and with plenty
+    # of samples
+    nf = 1000
+    fi = np.linspace(0.05 + 0.001j, 0.2 + 0.005j, nf)[:, None]
+
+    # set of time series
+    ti = np.exp(2j * np.pi * fi * t).real
+    time_series = ti
+
+    # random field for each frequency
+    fields = np.random.random((50, nf))
+
+    # need time series noise?
+    noise = np.random.random(t.shape)
+
+    # the data is the superposition of each field varied through
+    # time, permuted by some noise
+    time_fields = time_series[..., None] * fields[:, None, ...].T
+    superposition = np.sum(time_fields, axis=0)
+    data = superposition.T
+
+    # FIXME: this data forms non positive definite P, which can't be
+    # fed through cholesky decomp. you can use lu decomp instead,
+    # but this worries me as I think P has to be positive definite
+    # as each of the elements is a vector product |y_i|^2.|u_i|^2
+    # and so is a gram matrix of linearly independent vectors.
+    # I think the problem is something to do with the artificial
+    # data but I don't really understand.
+    return data
+
+    # don't need to do anything to make snapshots as data already
+    # has that form
+    dmd = all_dmdsp.SparseDMD(snapshots=data)
+
+
+def compare_modred_sparse():
+    """Compare output from modred with our sparse method."""
+    import modred as mr
+    import gc_turbulence as g
+
+    run = g.ProcessedRun(g.default_processed + 'r13_12_16a.hdf5')
+    # slice with no nans
+    # ( or use # complement(find_nan_slice(run.Uf_[:])) )
+    good_slice = (slice(None), slice(None), slice(46L, None))
+    data = run.Uf_[good_slice]
+
+    snapshots = all_dmdsp.SparseDMD.to_snaps(data, decomp_axis=1)
+
+    modes, ritz_values, norms \
+        = mr.compute_DMD_matrices_snaps_method(snapshots, slice(None))
+
+    pmodes, pnorms \
+        = mr.compute_POD_matrices_snaps_method(snapshots, slice(None))
+
+    dmd = all_dmdsp.SparseDMD(snapshots)
