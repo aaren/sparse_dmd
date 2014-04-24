@@ -373,13 +373,16 @@ class SparseDMD(object):
         snapshots will be reshaped to the original data dimensions,
         assuming that they were decomposed along axis `decomp_axis`.
         """
-        # FIXME: check that we're multiplying things in the right
-        # order. Is the vandermode matrix the right way up for this?
-        amplitudes = self.sparse.xpol[:, Ni]
+        amplitudes = np.diag(self.sparse.xpol[:, Ni])
         modes = self.modes
         time_series = self.Vand
 
-        snapshot_reconstruction = np.dot(modes, time_series) * amplitudes
+        # we take the real part because the modes are in conjugate
+        # pairs and should cancel out. They don't exactly because
+        # this is an optimal fit, not an exact match.
+        snapshot_reconstruction = np.dot(modes,
+                                         np.dot(amplitudes,
+                                                time_series)).real
 
         if shape is not None:
             data_reconstruction = self.to_data(snapshot_reconstruction, shape,
