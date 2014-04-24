@@ -107,9 +107,14 @@ class SparseDMD(object):
         self.s = np.trace(np.dot(G.T.conj(), G))
 
         # Cholesky factorization of P
+        # (more efficient way of computing x = P^(-1) q, when P is
+        # hermitian positive definite matrix, which it is)
         Pl = linalg.cholesky(self.P, lower=True)
         # Optimal vector of amplitudes xdmd
         self.xdmd = linalg.solve(Pl.T.conj(), linalg.solve(Pl, self.q))
+
+        # solve with inverse (i.e. lu-decomp)
+        # self.xdmd = linalg.solve(self.P, self.q)
 
     @staticmethod
     def dmd_reduction(snapshots):
