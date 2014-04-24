@@ -396,6 +396,28 @@ class SparseDMD(object):
         else:
             return snapshot_reconstruction
 
+    def make_sparse_reconstruction(self, nmodes):
+        """Compute a reconstruction of the input data based on a
+        desired number of modes.
+
+        Returns an object with the following attributes:
+
+            r = dmd.make_sparse_reconstruction(nmodes=3)
+
+            r.nmodes  # number of modes
+            r.data    # the reconstructed data
+            r.modes   # the modes (3 of them)
+            r.freqs   # corresponding complex frequencies
+            r.amplitudes  # corresponding amplitudes
+            r.ploss   # performance loss
+
+        Returns error if the given number of modes cannot be found
+        over the gamma we've looked at.
+
+        TODO: think about a gamma search function?
+        """
+        # TODO: write me
+
     @staticmethod
     def to_snaps(data, decomp_axis=-1):
         """Transform data into snapshots, using decomp_axis as
