@@ -216,8 +216,11 @@ class SparseDMD(object):
             'xsp':   np.zeros((self.n, ng), dtype=np.complex),
             # vector of amplitudes (after polishing)
             'xpol':  np.zeros((self.n, ng), dtype=np.complex),
+            # where modes are nonzero
+            'nonzero': np.zeros((self.n, ng), dtype=np.bool),
         }
 
+        # TODO: add docstrings to the properties of answer
         SparseAnswer = namedtuple('SparseDMDAnswer', empty_answer.keys())
         answer = SparseAnswer(**empty_answer)
 
@@ -236,6 +239,8 @@ class SparseDMD(object):
             answer.Jsp[i] = ret['Jsp'].squeeze()
             answer.Jpol[i] = ret['Jpol'].squeeze()
             answer.Ploss[i] = ret['Ploss'].squeeze()
+
+        answer.nonzero[:] = answer.xsp != 0
 
         return answer
 
