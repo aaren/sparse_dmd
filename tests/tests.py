@@ -114,7 +114,7 @@ def reconstruction():
     t = np.arange(0, 1000)[None]
     # choose set of frequencies well below nyquist and with plenty
     # of samples
-    nf = 1000
+    nf = 5
     fi = np.linspace(0.05 + 0.001j, 0.2 + 0.005j, nf)[:, None]
 
     # set of time series
@@ -130,7 +130,7 @@ def reconstruction():
     # the data is the superposition of each field varied through
     # time, permuted by some noise
     time_fields = time_series[..., None] * fields[:, None, ...].T
-    superposition = np.sum(time_fields, axis=0)
+    superposition = np.sum(time_fields, axis=0) / nf
     data = superposition.T
 
     # FIXME: this data forms non positive definite P, which can't be
@@ -140,6 +140,9 @@ def reconstruction():
     # and so is a gram matrix of linearly independent vectors.
     # I think the problem is something to do with the artificial
     # data but I don't really understand.
+
+    # Possibly fixed - problem was not truncating zeros from svd
+    # results
     return data
 
     # don't need to do anything to make snapshots as data already

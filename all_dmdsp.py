@@ -174,7 +174,6 @@ class SparseDMD(object):
             S      - the singular values
             V      - the left singular vectors
         """
-
         X0 = snapshots[:, :-1]
         X1 = snapshots[:, 1:]
 
@@ -187,9 +186,11 @@ class SparseDMD(object):
         S = np.diag(S)
         V = Vh.T.conj()
 
-        # the matlab source truncates the matrices U, S, V by the
-        # rank of S. We don't actually need to do that as we have
-        # used the economy SVD.
+        # truncate zero values from svd
+        r = np.linalg.matrix_rank(S)
+        U = U[:, :r]
+        S = S[:r, :r]
+        V = V[:, :r]
 
         # Determine matrix UstarX1
         UstarX1 = np.dot(U.T.conj(), X1)   # conjugate transpose (U' in matlab)
