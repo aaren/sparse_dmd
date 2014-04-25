@@ -187,6 +187,10 @@ class SparseDMD(object):
         S = np.diag(S)
         V = Vh.T.conj()
 
+        # the matlab source truncates the matrices U, S, V by the
+        # rank of S. We don't actually need to do that as we have
+        # used the economy SVD.
+
         # Determine matrix UstarX1
         UstarX1 = np.dot(U.T.conj(), X1)   # conjugate transpose (U' in matlab)
 
