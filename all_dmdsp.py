@@ -391,56 +391,28 @@ class SparseDMD(object):
                 'Ploss': polished_performance_loss,
                 }
 
-    def sparse_reconstruction(self, Ni, shape=None, decomp_axis=1):
-        """Reconstruct the snapshots using a given number of modes.
+    def compute_sparse_reconstruction(self, Ni, data=None, decomp_axis=1):
+        """Compute a reconstruction of the input data based on a sparse
+        selection of modes.
 
-        Ni is the index that gives the desired number of
-        modes in `self.sparse.Nz`.
+        Ni - the index that selects the desired number of
+             modes in self.sparse.Nz
 
-        shape is the shape of the original data. If None (default),
-        the reconstructed snapshots will be returned; otherwise the
-        snapshots will be reshaped to the original data dimensions,
-        assuming that they were decomposed along axis `decomp_axis`.
+        data - the original input data. If not supplied, the original
+               snapshots will be reconstructed.
+
+        Once computed, the reconstruction is available as
+        self.reconstruction and has the following attributes:
+
+        r.nmodes  # number of modes (3)
+        r.data    # the original data
+        r.rdata   # the reconstructed data (or snapshots)
+        r.modes   # the modes (3 of them)
+        r.freqs   # corresponding complex frequencies
+        r.amplitudes  # corresponding amplitudes
+        r.ploss   # performance loss
         """
-        amplitudes = np.diag(self.sparse.xpol[:, Ni])
-        modes = self.modes
-        time_series = self.Vand
-
-        # we take the real part because the modes are in conjugate
-        # pairs and should cancel out. They don't exactly because
-        # this is an optimal fit, not an exact match.
-        snapshot_reconstruction = np.dot(modes,
-                                         np.dot(amplitudes,
-                                                time_series)).real
-
-        if shape is not None:
-            data_reconstruction = self.to_data(snapshot_reconstruction, shape,
-                                               decomp_axis)
-            return data_reconstruction
-        else:
-            return snapshot_reconstruction
-
-    def make_sparse_reconstruction(self, nmodes):
-        """Compute a reconstruction of the input data based on a
-        desired number of modes.
-
-        Returns an object with the following attributes:
-
-            r = dmd.make_sparse_reconstruction(nmodes=3)
-
-            r.nmodes  # number of modes
-            r.data    # the reconstructed data
-            r.modes   # the modes (3 of them)
-            r.freqs   # corresponding complex frequencies
-            r.amplitudes  # corresponding amplitudes
-            r.ploss   # performance loss
-
-        Returns error if the given number of modes cannot be found
-        over the gamma we've looked at.
-
-        TODO: think about a gamma search function?
-        """
-        # TODO: write me
+        self.reconstruction = SparseReconstruction(self, Ni, data, decomp_axis)
 
     @staticmethod
     def to_snaps(data, decomp_axis=-1):
@@ -468,6 +440,84 @@ class SparseDMD(object):
         id = irshape.pop(-1)  # pull out index of decomp axis
         irshape.insert(decomp_axis, id)  # and insert where it came from
         return reshaped.transpose(irshape)
+
+
+class SparseReconstruction(object):
+    """Reconstruction of the input data based on a
+    desired number of modes.
+
+    Returns an object with the following attributes:
+
+        r = dmd.make_sparse_reconstruction(nmodes=3)
+
+        r.nmodes  # number of modes (3)
+        r.data    # the reconstructed data
+        r.modes   # the modes (3 of them)
+        r.freqs   # corresponding complex frequencies
+        r.amplitudes  # corresponding amplitudes
+        r.ploss   # performance loss
+
+    Returns error if the given number of modes cannot be found
+    over the gamma we've looked at.
+
+    TODO: think about a gamma search function?
+    """
+    def __init__(self, sparse_dmd, number_index, data=None, decomp_axis=1):
+        """
+        sparse_dmd - a SparseDMD instance with the sparse solution computed
+
+        number_index - the index that selects the desired number of
+                       modes in sparse_dmd.sparse.Nz
+
+        data - the original input data. If not supplied, the original
+               snapshots will be reconstructed.
+        """
+        self.dmd = sparse_dmd
+
+        self.nmodes = self.dmd.sparse.Nz[number_index]
+        self.Ni = number_index
+
+        self.data = data
+        self.decomp_axis = decomp_axis
+
+        self.rdata = self.sparse_reconstruction()
+
+        nonzero = self.dmd.sparse.nonzero[:, number_index]
+
+        self.modes = self.dmd.modes[:, nonzero]
+        self.freqs = self.dmd.Edmd[nonzero]
+        self.amplitudes = self.dmd.sparse.xpol[nonzero]
+        self.ploss = self.dmd.sparse.Ploss[number_index]
+
+    def sparse_reconstruction(self):
+        """Reconstruct the snapshots using a given number of modes.
+
+        Ni is the index that gives the desired number of
+        modes in `self.sparse.Nz`.
+
+        shape is the shape of the original data. If None (default),
+        the reconstructed snapshots will be returned; otherwise the
+        snapshots will be reshaped to the original data dimensions,
+        assuming that they were decomposed along axis `decomp_axis`.
+        """
+        amplitudes = np.diag(self.dmd.sparse.xpol[:, self.Ni])
+        modes = self.dmd.modes
+        time_series = self.dmd.Vand
+
+        # we take the real part because the modes are in conjugate
+        # pairs and should cancel out. They don't exactly because
+        # this is an optimal fit, not an exact match.
+        snapshot_reconstruction = np.dot(modes,
+                                         np.dot(amplitudes,
+                                                time_series)).real
+
+        if self.data is not None:
+            data_reconstruction = self.dmd.to_data(snapshot_reconstruction,
+                                                   self.data.shape,
+                                                   self.decomp_axis)
+            return data_reconstruction
+        else:
+            return snapshot_reconstruction
 
 
 def subplot(plot_function):
