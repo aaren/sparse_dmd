@@ -49,7 +49,7 @@ def test_compare_outputs():
                                                             S,
                                                             V,
                                                             gammaval)
-    # convert namedtuple to dict
+    # convert class attributes to dict
     py_answer = py_answer.__dict__
 
     ## matlab output created by running matlab:
