@@ -266,6 +266,8 @@ class SparseDMD(object):
 
     def admm(self, z, y, gamma):
         """Alternating direction method of multipliers"""
+        # TODO: write in cython. something like this:
+        # http://docs.cython.org/src/userguide/numpy_tutorial.html
         a = (gamma / self.rho) * np.ones((self.n, 1))
         for ADMMstep in range(self.max_admm_iter):
             # x-minimization step (alpha minimisation)
