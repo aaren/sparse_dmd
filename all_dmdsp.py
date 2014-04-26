@@ -244,12 +244,7 @@ class SparseDMD(object):
         # length of parameter vector
         ng = len(gammaval)
 
-        # Identity matrix
-        self.I = np.identity(self.n)
-        # Cholesky factorization of matrix P + (rho/2)*I
-        self.Prho = self.P + (self.rho / 2.) * self.I
-        self.Plow = linalg.cholesky(self.Prho, lower=True)
-        self.Plow_star = self.Plow.T.conj()
+        self.Prho = self.P + (self.rho / 2.) * np.identity(self.n)
 
         answer = SparseAnswer(self.n, ng)
         answer.gamma = gammaval
@@ -275,11 +270,14 @@ class SparseDMD(object):
         for ADMMstep in range(self.max_admm_iter):
             # x-minimization step (alpha minimisation)
             u = z - (1. / self.rho) * y
-            # TODO: solve or lstsq?
-            xnew = linalg.solve(self.Plow_star,
-                                linalg.solve(self.Plow,
-                                             self.q[:, None]
-                                             + (self.rho / 2.) * u))
+            qs = self.q[:, None] + (self.rho / 2.) * u
+
+            # use fact that P is hermitian and positive definite. In
+            # the matlab source they do this with cholesky decomp
+            # first. Also assume P is well behaved (no inf or nan).
+            xnew = linalg.solve(self.Prho, qs,
+                                check_finite=False,
+                                sym_pos=True)
 
             # z-minimization step (beta minimisation)
             v = xnew + (1 / self.rho) * y
@@ -315,7 +313,7 @@ class SparseDMD(object):
 
         # Polishing of the nonzero amplitudes
         # Form the constraint matrix E for E^T x = 0
-        E = self.I[:, ind_zero].squeeze()
+        E = np.identity(self.n)[:, ind_zero].squeeze()
         # n.b. we don't form the sparse matrix as the original
         # matlab does as it doesn't seem to have any affect on the
         # computation speed or the output.
