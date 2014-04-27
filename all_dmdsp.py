@@ -269,36 +269,53 @@ class SparseDMD(object):
         # TODO: write in cython. something like this:
         # http://docs.cython.org/src/userguide/numpy_tutorial.html
         a = (gamma / self.rho) * np.ones((self.n, 1))
-        for ADMMstep in range(self.max_admm_iter):
-            # x-minimization step (alpha minimisation)
-            u = z - (1. / self.rho) * y
-            qs = self.q[:, None] + (self.rho / 2.) * u
+        q = self.q[:, None]
 
+        # squeeze all arrays
+        a = a.squeeze()
+        q = q.squeeze()
+        z = z.squeeze()
+        y = y.squeeze()
+
+        # link directly to LAPACK fortran solver for positive
+        # definite symmetric system:
+        possym_solve, = linalg.get_lapack_funcs(('posv',), dtype=np.complex128)
+
+        # simple norm of a 1d vector
+        norm = lambda x: np.sqrt(np.dot(x.conj(), x).real)
+
+        # square root outside of the loop
+        root_n = np.sqrt(self.n)
+
+        for ADMMstep in xrange(self.max_admm_iter):
+            ### x-minimization step (alpha minimisation)
+            u = z - (1. / self.rho) * y
+            qs = q + (self.rho / 2.) * u
             # use fact that P is hermitian and positive definite. In
             # the matlab source they do this with cholesky decomp
             # first. Also assume P is well behaved (no inf or nan).
-            xnew = linalg.solve(self.Prho, qs,
-                                check_finite=False,
-                                sym_pos=True)
+            xnew = possym_solve(self.Prho, qs)[1]
+            ###
 
-            # z-minimization step (beta minimisation)
+            ### z-minimization step (beta minimisation)
             v = xnew + (1 / self.rho) * y
             # Soft-thresholding of v
-            znew = ((1 - a / abs(v)) * v) * (np.abs(v) > a)
+            abs_v = np.abs(v)
+            znew = ((1 - a / abs_v) * v) * (abs_v > a)
+            ###
 
-            # Lagrange multiplier update step
+            ### Lagrange multiplier update step
             y = y + self.rho * (xnew - znew)
+            ###
 
             # Primal and dual residuals
-            res_prim = np.linalg.norm(xnew - znew)
-            res_dual = self.rho * np.linalg.norm(znew - z)
+            res_prim = norm(xnew - znew)
+            res_dual = self.rho * norm(znew - z)
 
             # Stopping criteria
-            eps_prim = np.sqrt(self.n) * self.eps_abs \
-                        + self.eps_rel * max([np.linalg.norm(xnew),
-                                              np.linalg.norm(znew)])
-            eps_dual = np.sqrt(self.n) * self.eps_abs \
-                        + self.eps_rel * np.linalg.norm(y)
+            eps_prim = root_n * self.eps_abs \
+                        + self.eps_rel * max(norm(xnew), norm(znew))
+            eps_dual = root_n * self.eps_abs + self.eps_rel * norm(y)
 
             if (res_prim < eps_prim) & (res_dual < eps_dual):
                 return z
