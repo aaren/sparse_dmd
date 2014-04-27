@@ -284,21 +284,21 @@ class SparseDMD(object):
             # z-minimization step (beta minimisation)
             v = xnew + (1 / self.rho) * y
             # Soft-thresholding of v
-            znew = ((1 - a / abs(v)) * v) * (abs(v) > a)
+            znew = ((1 - a / abs(v)) * v) * (np.abs(v) > a)
 
             # Lagrange multiplier update step
             y = y + self.rho * (xnew - znew)
 
             # Primal and dual residuals
-            res_prim = linalg.norm(xnew - znew)
-            res_dual = self.rho * linalg.norm(znew - z)
+            res_prim = np.linalg.norm(xnew - znew)
+            res_dual = self.rho * np.linalg.norm(znew - z)
 
             # Stopping criteria
             eps_prim = np.sqrt(self.n) * self.eps_abs \
-                        + self.eps_rel * max([linalg.norm(xnew),
-                                              linalg.norm(znew)])
+                        + self.eps_rel * max([np.linalg.norm(xnew),
+                                              np.linalg.norm(znew)])
             eps_dual = np.sqrt(self.n) * self.eps_abs \
-                        + self.eps_rel * linalg.norm(y)
+                        + self.eps_rel * np.linalg.norm(y)
 
             if (res_prim < eps_prim) & (res_dual < eps_dual):
                 return z
