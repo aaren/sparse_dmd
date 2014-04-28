@@ -270,10 +270,11 @@ class SparseDMD(object):
         # http://docs.cython.org/src/userguide/numpy_tutorial.html
         a = (gamma / self.rho) * np.ones(self.n)
         q = self.q
+        C = linalg.cholesky(self.Prho, lower=False)
 
         # link directly to LAPACK fortran solver for positive
-        # definite symmetric system:
-        possym_solve, = linalg.get_lapack_funcs(('posv',), dtype=np.complex128)
+        # definite symmetric system with precomputed cholesky decomp:
+        potrs, = linalg.get_lapack_funcs(('potrs',), arrays=(C, q))
 
         # simple norm of a 1d vector
         norm = lambda x: np.sqrt(np.dot(x.conj(), x).real)
@@ -288,7 +289,7 @@ class SparseDMD(object):
             # use fact that P is hermitian and positive definite. In
             # the matlab source they do this with cholesky decomp
             # first. Also assume P is well behaved (no inf or nan).
-            xnew = possym_solve(self.Prho, qs)[1]
+            xnew = potrs(C, qs, lower=False, overwrite_b=False)[0]
             ###
 
             ### z-minimization step (beta minimisation)
