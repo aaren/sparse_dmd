@@ -3,7 +3,7 @@ import numpy.testing as nt
 import scipy.io
 import numpy as np
 
-import all_dmdsp
+import sparse_dmd
 
 
 def create_snapshots():
@@ -25,7 +25,7 @@ def create_snapshots():
 
 
 def create_answer(n=200):
-    answer = all_dmdsp.run_dmdsp(gamma_grd=n)
+    answer = sparse_dmd.run_dmdsp(gamma_grd=n)
     scipy.io.savemat('tests/answer.mat', answer)
 
 
@@ -45,7 +45,7 @@ def test_compare_outputs():
     gamma_grd = 20
     gammaval = np.logspace(np.log10(0.15), np.log10(160), gamma_grd)
 
-    Fdmd, Edmd, Ydmd, xdmd, py_answer = all_dmdsp.run_dmdsp(UstarX1,
+    Fdmd, Edmd, Ydmd, xdmd, py_answer = sparse_dmd.run_dmdsp(UstarX1,
                                                             S,
                                                             V,
                                                             gammaval)
@@ -95,7 +95,7 @@ def test_compare_inputs():
     snapshots = scipy.io.loadmat('tests/snapshots.mat')['snapshots']
 
     # compute the python reduction
-    py_data = all_dmdsp.SparseDMD.dmd_reduction(snapshots)
+    py_data = sparse_dmd.SparseDMD.dmd_reduction(snapshots)
 
     # load reference matlab output
     mat_data = scipy.io.loadmat('tests/reference.mat')
@@ -147,7 +147,7 @@ def reconstruction():
 
     # don't need to do anything to make snapshots as data already
     # has that form
-    dmd = all_dmdsp.SparseDMD(snapshots=data)
+    dmd = sparse_dmd.SparseDMD(snapshots=data)
 
 
 def compare_modred_sparse():
@@ -161,7 +161,7 @@ def compare_modred_sparse():
     good_slice = (slice(None), slice(None), slice(46L, None))
     data = run.Uf_[good_slice]
 
-    snapshots = all_dmdsp.SparseDMD.to_snaps(data, decomp_axis=1)
+    snapshots = sparse_dmd.SparseDMD.to_snaps(data, decomp_axis=1)
 
     modes, ritz_values, norms \
         = mr.compute_DMD_matrices_snaps_method(snapshots, slice(None))
@@ -169,4 +169,4 @@ def compare_modred_sparse():
     pmodes, pnorms \
         = mr.compute_POD_matrices_snaps_method(snapshots, slice(None))
 
-    dmd = all_dmdsp.SparseDMD(snapshots)
+    dmd = sparse_dmd.SparseDMD(snapshots)
