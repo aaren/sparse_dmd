@@ -255,10 +255,10 @@ class SparseDMD(object):
             answer.xsp[:, i] = ret['xsp']
             answer.xpol[:, i] = ret['xpol']
 
-            answer.Nz[i] = ret['Nz'].squeeze()
-            answer.Jsp[i] = ret['Jsp'].squeeze()
-            answer.Jpol[i] = ret['Jpol'].squeeze()
-            answer.Ploss[i] = ret['Ploss'].squeeze()
+            answer.Nz[i] = ret['Nz']
+            answer.Jsp[i] = ret['Jsp']
+            answer.Jpol[i] = ret['Jpol']
+            answer.Ploss[i] = ret['Ploss']
 
         answer.nonzero[:] = answer.xsp != 0
 
@@ -268,14 +268,8 @@ class SparseDMD(object):
         """Alternating direction method of multipliers"""
         # TODO: write in cython. something like this:
         # http://docs.cython.org/src/userguide/numpy_tutorial.html
-        a = (gamma / self.rho) * np.ones((self.n, 1))
-        q = self.q[:, None]
-
-        # squeeze all arrays
-        a = a.squeeze()
-        q = q.squeeze()
-        z = z.squeeze()
-        y = y.squeeze()
+        a = (gamma / self.rho) * np.ones(self.n)
+        q = self.q
 
         # link directly to LAPACK fortran solver for positive
         # definite symmetric system:
@@ -325,7 +319,7 @@ class SparseDMD(object):
     def KKT_solve(self, z):
         # indices of zero elements of z (i.e. amplitudes that
         # we are ignoring)
-        ind_zero = np.where(abs(z.squeeze()) < 1E-12)
+        ind_zero = np.where(abs(z) < 1E-12)
 
         # number of zero elements
         m = len(ind_zero[0])
@@ -343,7 +337,7 @@ class SparseDMD(object):
         KKT = np.vstack((np.hstack((self.P, E)),
                          np.hstack((E.T.conj(), np.zeros((m, m))))
                          ))
-        rhs = np.vstack((self.q[:, None], np.zeros((m, 1))))
+        rhs = np.hstack((self.q, np.zeros(m)))
 
         # Solve KKT system
         return linalg.solve(KKT, rhs)
@@ -377,8 +371,8 @@ class SparseDMD(object):
         """
         # Use ADMM to solve the gamma-parameterized problem,
         # minimising J, with initial conditions z0, y0
-        y0 = np.zeros((self.n, 1))  # Lagrange multiplier
-        z0 = np.zeros((self.n, 1))
+        y0 = np.zeros(self.n)  # Lagrange multiplier
+        z0 = np.zeros(self.n)
         z = self.admm(z0, y0, gamma)
 
         # Now use the minimised amplitudes as the input to the
@@ -388,14 +382,14 @@ class SparseDMD(object):
 
         # outputs that we care about...
         # vector of amplitudes
-        sparse_amplitudes = z.squeeze()
+        sparse_amplitudes = z
         # number of non-zero amplitudes
         num_nonzero = (z != 0).sum()
         # least squares residual
         residuals = self.residuals(z)
 
         # Vector of polished (optimal) amplitudes
-        polished_amplitudes = xpol.squeeze()
+        polished_amplitudes = xpol
         # Polished (optimal) least-squares residual
         polished_residual = self.residuals(xpol)
         # Polished (optimal) performance loss
