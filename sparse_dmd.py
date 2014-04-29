@@ -79,7 +79,26 @@ class SparseDMD(object):
     def __init__(self, snapshots=None, rho=1, maxiter=10000,
                  eps_abs=1e-6, eps_rel=1e-4):
         """Sparse Dynamic Mode Decomposition, using ADMM to find a
-        set of sparse optimal dynamic mode amplitudes
+        sparse set of optimal dynamic mode amplitudes
+
+        Inputs:
+            snapshots - the matrix of data snapshots, shape (d, N)
+                        where N is the number of snapshots and d is
+                        the number of data points in a snapshot.
+            rho     - augmented Lagrangian parameter
+            maxiter - maximum number of ADMM iterations
+            eps_abs - absolute tolerance for ADMM
+            eps_rel - relative tolerance for ADMM
+
+        Defaults:
+            If snapshots is not supplied and you have precomputed
+            the dmd reduction [U^*X1, S, V], you can initialise the
+            dmd with SparseDMD.init_dmd(U^*X1, S, V).
+
+            rho = 1
+            maxiter = 10000
+            eps_abs = 1.e-6
+            eps_rel = 1.e-4
         """
         self.rho = rho
         self.max_admm_iter = maxiter
@@ -98,6 +117,53 @@ class SparseDMD(object):
     def reduction(self):
         """Compute the reduced form of the data snapshots"""
         return self.dmd_reduction(self.snapshots)
+
+    @staticmethod
+    def dmd_reduction(snapshots):
+        """Takes a series of snapshots and splits into two subsequent
+        series, X0, X1, where
+
+            snapshots = [X0, X1[-1]]
+
+        then computes the (economy) single value decomposition
+
+            X0 = U S V*
+
+        returns an object with attributes
+
+            UstarX1 - U* X1, the left singular vectors (POD modes)
+                      projected onto the data
+            U       - U, the left singular vectors
+            S       - S, the singular values
+            V       - V, the right singular vectors
+            X0      - X0, snapshots[:, :-1]
+            X1      - X1, snapshots[:. 1:]
+        """
+        X0 = snapshots[:, :-1]
+        X1 = snapshots[:, 1:]
+
+        # economy size SVD of X0
+        U, S, Vh = linalg.svd(X0, full_matrices=False)
+        ## n.b. differences with matlab svd:
+        ## 1. S is a 1d array of diagonal elements
+        ## 2. Vh == V': the matlab version returns V for X = U S V',
+        ##    whereas python returns V'
+        S = np.diag(S)
+        V = Vh.T.conj()
+
+        # truncate zero values from svd
+        r = np.linalg.matrix_rank(S)
+        U = U[:, :r]
+        S = S[:r, :r]
+        V = V[:, :r]
+
+        # Determine matrix UstarX1
+        UstarX1 = np.dot(U.T.conj(), X1)   # conjugate transpose (U' in matlab)
+
+        reduction_keys = ('UstarX1', 'S', 'V', 'U', 'X0', 'X1')
+        Reduction = namedtuple('DMDReduction', reduction_keys)
+
+        return Reduction(UstarX1=UstarX1, S=S, V=V, U=U, X0=X0, X1=X1)
 
     def init_dmd(self, UstarX1=None, S=None, V=None):
         """Calculate the DMD matrix from the data reduction."""
@@ -141,7 +207,9 @@ class SparseDMD(object):
 
         # Form matrix P, vector q, and scalar s, where
         # J = x'*P*x - q'*x - x'*q + s
-        # x - optimization variable (i.e., the unknown vector of amplitudes)
+        # with x as the optimization variable (i.e., the unknown
+        # vector of amplitudes). We seek to minimize J to find the
+        # optimal amplitudes.
         self.P = np.dot(L.T.conj(), L) * np.dot(R, R.T.conj()).conj()
         self.q = np.diagonal(np.dot(np.dot(R, G.T.conj()), L)).conj()
         self.s = np.trace(np.dot(G.T.conj(), G))
@@ -153,80 +221,17 @@ class SparseDMD(object):
         # Optimal vector of amplitudes xdmd
         self.xdmd = linalg.solve(Pl.T.conj(), linalg.solve(Pl, self.q))
 
-        # solve with inverse (i.e. lu-decomp)
-        # self.xdmd = linalg.solve(self.P, self.q)
-
-    @staticmethod
-    def dmd_reduction(snapshots):
-        """Takes a series of snapshots and splits into two subsequent
-        series, X0, X1, where
-
-            snapshots = [X0, X1[-1]]
-
-        then computes the (economy) single value decomposition
-
-            X0 = U S V*
-
-        returning
-
-            U* X1  - the right singular vectors (POD modes)
-                    projected onto the data
-            S      - the singular values
-            V      - the left singular vectors
-        """
-        X0 = snapshots[:, :-1]
-        X1 = snapshots[:, 1:]
-
-        # economy size SVD of X0
-        U, S, Vh = linalg.svd(X0, full_matrices=False)
-        ## n.b. differences with matlab svd:
-        ## 1. S is a 1d array of diagonal elements
-        ## 2. Vh == V': the matlab version returns V for X = U S V',
-        ##    whereas python returns V'
-        S = np.diag(S)
-        V = Vh.T.conj()
-
-        # truncate zero values from svd
-        r = np.linalg.matrix_rank(S)
-        U = U[:, :r]
-        S = S[:r, :r]
-        V = V[:, :r]
-
-        # Determine matrix UstarX1
-        UstarX1 = np.dot(U.T.conj(), X1)   # conjugate transpose (U' in matlab)
-
-        reduction_keys = ('UstarX1', 'S', 'V', 'U', 'X0', 'X1')
-        Reduction = namedtuple('DMDReduction', reduction_keys)
-
-        return Reduction(UstarX1=UstarX1, S=S, V=V, U=U, X0=X0, X1=X1)
-
     def compute_dmdsp(self, gammaval):
+        """Compute the sparse dmd structure and set as attribute."""
         self.gammaval = gammaval
         self.sparse = self.dmdsp(gammaval)
 
     def dmdsp(self, gammaval):
-        """Inputs:  matrix P
-                    vector q
-                    scalar s
-                    sparsity promoting parameter gamma
+        """Inputs:
+            gammaval - vector of gamma to perform sparse optimisation over
 
-                (2) options
-
-                    options.rho     - augmented Lagrangian parameter rho
-                    options.maxiter - maximum number of ADMM iterations
-                    options.eps_abs - absolute tolerance
-                    options.eps_rel - relative tolerance
-
-                    If options argument is omitted, the default values
-                    are set to
-
-                    options.rho = 1
-                    options.maxiter = 10000
-                    options.eps_abs = 1.e-6
-                    options.eps_rel = 1.e-4
-
-        Output:  answer - gamma-parameterized structure containing
-
+        Returns:
+            answer - gamma-parameterized structure containing
                 answer.gamma - sparsity-promoting parameter gamma
                 answer.xsp   - vector of amplitudes resulting from (SP)
                 answer.xpol  - vector of amplitudes resulting from (POL)
@@ -264,99 +269,6 @@ class SparseDMD(object):
 
         return answer
 
-    def admm(self, z, y, gamma):
-        """Alternating direction method of multipliers"""
-        # TODO: write in cython. something like this:
-        # http://docs.cython.org/src/userguide/numpy_tutorial.html
-        a = (gamma / self.rho) * np.ones(self.n)
-        q = self.q
-        C = linalg.cholesky(self.Prho, lower=False)
-
-        # link directly to LAPACK fortran solver for positive
-        # definite symmetric system with precomputed cholesky decomp:
-        potrs, = linalg.get_lapack_funcs(('potrs',), arrays=(C, q))
-
-        # simple norm of a 1d vector
-        norm = lambda x: np.sqrt(np.dot(x.conj(), x).real)
-
-        # square root outside of the loop
-        root_n = np.sqrt(self.n)
-
-        for ADMMstep in xrange(self.max_admm_iter):
-            ### x-minimization step (alpha minimisation)
-            u = z - (1. / self.rho) * y
-            qs = q + (self.rho / 2.) * u
-            # use fact that P is hermitian and positive definite. In
-            # the matlab source they do this with cholesky decomp
-            # first. Also assume P is well behaved (no inf or nan).
-            xnew = potrs(C, qs, lower=False, overwrite_b=False)[0]
-            ###
-
-            ### z-minimization step (beta minimisation)
-            v = xnew + (1 / self.rho) * y
-            # Soft-thresholding of v
-            abs_v = np.abs(v)
-            znew = ((1 - a / abs_v) * v) * (abs_v > a)
-            ###
-
-            ### Lagrange multiplier update step
-            y = y + self.rho * (xnew - znew)
-            ###
-
-            # Primal and dual residuals
-            res_prim = norm(xnew - znew)
-            res_dual = self.rho * norm(znew - z)
-
-            # Stopping criteria
-            eps_prim = root_n * self.eps_abs \
-                        + self.eps_rel * max(norm(xnew), norm(znew))
-            eps_dual = root_n * self.eps_abs + self.eps_rel * norm(y)
-
-            if (res_prim < eps_prim) & (res_dual < eps_dual):
-                return z
-            else:
-                z = znew
-
-    def KKT_solve(self, z):
-        # indices of zero elements of z (i.e. amplitudes that
-        # we are ignoring)
-        ind_zero = np.where(abs(z) < 1E-12)
-
-        # number of zero elements
-        m = len(ind_zero[0])
-
-        # Polishing of the nonzero amplitudes
-        # Form the constraint matrix E for E^T x = 0
-        E = np.identity(self.n)[:, ind_zero].squeeze()
-        # n.b. we don't form the sparse matrix as the original
-        # matlab does as it doesn't seem to have any affect on the
-        # computation speed or the output.
-        # If you want to use a sparse matrix, use the
-        # scipy.sparse.linalg.spsolve solver with a csc matrix
-
-        # Form KKT system for the optimality conditions
-        KKT = np.vstack((np.hstack((self.P, E)),
-                         np.hstack((E.T.conj(), np.zeros((m, m))))
-                         ))
-        rhs = np.hstack((self.q, np.zeros(m)))
-
-        # Solve KKT system
-        return linalg.solve(KKT, rhs)
-
-    def residuals(self, x):
-        """Calculate the residuals from a minimised
-        vector of amplitudes x.
-        """
-        # conjugate transpose
-        x_ = x.T.conj()
-        q_ = self.q.T.conj()
-
-        x_P = np.dot(x_, self.P)
-        x_Px = np.dot(x_P, x)
-        q_x = np.dot(q_, x)
-
-        return x_Px.real - 2 * q_x.real + self.s
-
     def optimize_gamma(self, gamma):
         """Minimise
             J(a)
@@ -373,7 +285,7 @@ class SparseDMD(object):
         # Use ADMM to solve the gamma-parameterized problem,
         # minimising J, with initial conditions z0, y0
         y0 = np.zeros(self.n)  # Lagrange multiplier
-        z0 = np.zeros(self.n)
+        z0 = np.zeros(self.n)  # initial amplitudes
         z = self.admm(z0, y0, gamma)
 
         # Now use the minimised amplitudes as the input to the
@@ -403,6 +315,131 @@ class SparseDMD(object):
                 'Jpol':  polished_residual,
                 'Ploss': polished_performance_loss,
                 }
+
+    def admm(self, z, y, gamma):
+        """Alternating direction method of multipliers."""
+        # Optimization:
+        # This has been resonably optimized already and performs ~3x
+        # faster than a naive translation of the matlab version.
+
+        # Two major changes are a custom function for calculating
+        # the norm of a 1d vector and accessing the lapack solver
+        # directly.
+
+        # However it still isn't as fast as matlab (~1/3rd the
+        # speed).
+
+        # There are two complexity sources:
+        # 1. the matrix solver. I can't see how this can get any
+        #    faster (tested with Intel MKL on Canopy).
+        # 2. the test for convergence. This is the dominant source
+        #    now (~3x the time of the solver)
+
+        # One simple speedup (~2x faster) is to only test
+        # convergence every n iterations (n~10). However this breaks
+        # output comparison with the matlab code. This might not
+        # actually be a problem.
+
+        # Further avenues for optimization:
+        # - write in cython and import as compiled module, e.g.
+        #   http://docs.cython.org/src/userguide/numpy_tutorial.html
+        # - use two cores, with one core performing the admm and
+        #   the other watching for convergence.
+
+        a = (gamma / self.rho) * np.ones(self.n)
+        q = self.q
+
+        # precompute cholesky decomposition
+        C = linalg.cholesky(self.Prho, lower=False)
+        # link directly to LAPACK fortran solver for positive
+        # definite symmetric system with precomputed cholesky decomp:
+        potrs, = linalg.get_lapack_funcs(('potrs',), arrays=(C, q))
+
+        # simple norm of a 1d vector
+        norm = lambda x: np.sqrt(np.dot(x.conj(), x).real)
+
+        # square root outside of the loop
+        root_n = np.sqrt(self.n)
+
+        for ADMMstep in xrange(self.max_admm_iter):
+            ### x-minimization step (alpha minimisation)
+            u = z - (1. / self.rho) * y
+            qs = q + (self.rho / 2.) * u
+            # Solve P x = qs, using fact that P is hermitian and
+            # positive definite and assuming P is well behaved (no
+            # inf or nan).
+            xnew = potrs(C, qs, lower=False, overwrite_b=False)[0]
+            ###
+
+            ### z-minimization step (beta minimisation)
+            v = xnew + (1 / self.rho) * y
+            # Soft-thresholding of v (zero for |v| < a)
+            abs_v = np.abs(v)
+            znew = ((1 - a / abs_v) * v) * (abs_v > a)
+            ###
+
+            ### Lagrange multiplier update step
+            y = y + self.rho * (xnew - znew)
+            ###
+
+            ### Test convergence of admm
+            # Primal and dual residuals
+            res_prim = norm(xnew - znew)
+            res_dual = self.rho * norm(znew - z)
+
+            # Stopping criteria
+            eps_prim = root_n * self.eps_abs \
+                        + self.eps_rel * max(norm(xnew), norm(znew))
+            eps_dual = root_n * self.eps_abs + self.eps_rel * norm(y)
+
+            if (res_prim < eps_prim) & (res_dual < eps_dual):
+                return z
+            else:
+                z = znew
+
+    def KKT_solve(self, z):
+        """Polishing of the sparse vector z. Seeks solution to
+        E^T z = 0
+        """
+        # indices of zero elements of z (i.e. amplitudes that
+        # we are ignoring)
+        ind_zero = np.where(abs(z) < 1E-12)
+
+        # number of zero elements
+        m = len(ind_zero[0])
+
+        # Polishing of the nonzero amplitudes
+        # Form the constraint matrix E for E^T x = 0
+        E = np.identity(self.n)[:, ind_zero].squeeze()
+        # n.b. we don't form the sparse matrix as the original
+        # matlab does as it doesn't seem to have any affect on the
+        # computation speed or the output.
+        # If you want to use a sparse matrix, use the
+        # scipy.sparse.linalg.spsolve solver with a csc matrix
+        # and stask using scipy.sparse.{hstack, vstack}
+
+        # Form KKT system for the optimality conditions
+        KKT = np.vstack((np.hstack((self.P, E)),
+                         np.hstack((E.T.conj(), np.zeros((m, m))))
+                         ))
+        rhs = np.hstack((self.q, np.zeros(m)))
+
+        # Solve KKT system
+        return linalg.solve(KKT, rhs)
+
+    def residuals(self, x):
+        """Calculate the residuals from a minimised
+        vector of amplitudes x.
+        """
+        # conjugate transpose
+        x_ = x.T.conj()
+        q_ = self.q.T.conj()
+
+        x_P = np.dot(x_, self.P)
+        x_Px = np.dot(x_P, x)
+        q_x = np.dot(q_, x)
+
+        return x_Px.real - 2 * q_x.real + self.s
 
     def compute_sparse_reconstruction(self, Ni, data=None, decomp_axis=1):
         """Compute a reconstruction of the input data based on a sparse
