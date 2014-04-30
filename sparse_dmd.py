@@ -554,9 +554,10 @@ class SparseReconstruction(object):
         modes = self.dmd.modes
         time_series = self.dmd.Vand
 
-        # we take the real part because the modes are in conjugate
-        # pairs and should cancel out. They don't exactly because
-        # this is an optimal fit, not an exact match.
+        # we take the real part because for real data the modes are
+        # in conjugate pairs and should cancel out. They don't
+        # exactly because this is an optimal fit, not an exact
+        # match.
         snapshot_reconstruction = np.dot(modes,
                                          np.dot(amplitudes,
                                                 time_series)).real
