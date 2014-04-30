@@ -105,6 +105,7 @@ class SparseAnswer(object):
 class SparseDMD(object):
     def __init__(self, snapshots=None, rho=1, maxiter=10000,
                  eps_abs=1e-6, eps_rel=1e-4):
+        # TODO: allow data, decomp_axis as an argument instead of snapshots
         """Sparse Dynamic Mode Decomposition, using ADMM to find a
         sparse set of optimal dynamic mode amplitudes
 
