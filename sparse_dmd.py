@@ -10,6 +10,33 @@ import scipy.linalg as linalg
 import matplotlib.pyplot as plt
 
 
+def to_snaps(data, decomp_axis=-1):
+    """Transform data into snapshots, using decomp_axis as
+    the decomposition axis.
+    """
+    sd = data.shape[decomp_axis]   # size of the decomp axis
+    shape_idx = range(len(data.shape))
+    # we reset the value of decomp_axis to allow indexing with -1
+    decomp_axis = shape_idx.pop(decomp_axis)
+    # put the decomp axis last and reshape to 2d array
+    return data.transpose(shape_idx + [decomp_axis]).reshape((-1, sd))
+
+
+def to_data(snapshots, shape, decomp_axis=-1):
+    """Reshape snapshots or modes to match data that
+    had a `shape` and that was decomposed along `decomp_axis`.
+    """
+    shape = list(shape)
+    shape.pop(decomp_axis)  # remove decomp axis (it is implicitly last)
+    reshaped = np.asarray(snapshots).reshape(shape + [-1])
+
+    rshape = list(reshaped.shape)
+    irshape = range(len(rshape))  # indices of array shape
+    id = irshape.pop(-1)  # pull out index of decomp axis
+    irshape.insert(decomp_axis, id)  # and insert where it came from
+    return reshaped.transpose(irshape)
+
+
 def run_dmdsp(UstarX1, S, V, gammaval):
     """
     Inputs: matrices U'*X1, S, and V (for a specified flow type)
@@ -464,33 +491,6 @@ class SparseDMD(object):
         """
         self.reconstruction = SparseReconstruction(self, Ni, data, decomp_axis)
 
-    @staticmethod
-    def to_snaps(data, decomp_axis=-1):
-        """Transform data into snapshots, using decomp_axis as
-        the decomposition axis.
-        """
-        sd = data.shape[decomp_axis]   # size of the decomp axis
-        shape_idx = range(len(data.shape))
-        # we reset the value of decomp_axis to allow indexing with -1
-        decomp_axis = shape_idx.pop(decomp_axis)
-        # put the decomp axis last and reshape to 2d array
-        return data.transpose(shape_idx + [decomp_axis]).reshape((-1, sd))
-
-    @staticmethod
-    def to_data(snapshots, shape, decomp_axis=-1):
-        """Reshape snapshots or modes to match data that
-        had a `shape` and that was decomposed along `decomp_axis`.
-        """
-        shape = list(shape)
-        shape.pop(decomp_axis)  # remove decomp axis (it is implicitly last)
-        reshaped = np.asarray(snapshots).reshape(shape + [-1])
-
-        rshape = list(reshaped.shape)
-        irshape = range(len(rshape))  # indices of array shape
-        id = irshape.pop(-1)  # pull out index of decomp axis
-        irshape.insert(decomp_axis, id)  # and insert where it came from
-        return reshaped.transpose(irshape)
-
 
 class SparseReconstruction(object):
     """Reconstruction of the input data based on a
@@ -563,9 +563,9 @@ class SparseReconstruction(object):
                                                 time_series)).real
 
         if self.data is not None:
-            data_reconstruction = self.dmd.to_data(snapshot_reconstruction,
-                                                   self.data.shape,
-                                                   self.decomp_axis)
+            data_reconstruction = to_data(snapshot_reconstruction,
+                                          self.data.shape,
+                                          self.decomp_axis)
             return data_reconstruction
         else:
             return snapshot_reconstruction
