@@ -537,7 +537,7 @@ class SparseReconstruction(object):
 
         self.modes = self.dmd.modes[:, nonzero]
         self.freqs = self.dmd.Edmd[nonzero]
-        self.amplitudes = self.dmd.sparse.xpol[nonzero]
+        self.amplitudes = self.dmd.sparse.xpol[nonzero, number_index]
         self.ploss = self.dmd.sparse.Ploss[number_index]
 
     def sparse_reconstruction(self):
