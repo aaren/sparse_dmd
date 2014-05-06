@@ -384,6 +384,8 @@ class SparseDMD(object):
         potrs, = linalg.get_lapack_funcs(('potrs',), arrays=(C, q))
 
         # simple norm of a 1d vector
+        # TODO: try math.sqrt - should be faster as we are passing a scalar
+        # see comments on http://stackoverflow.com/questions/6802577
         norm = lambda x: np.sqrt(np.dot(x.conj(), x).real)
 
         # square root outside of the loop
