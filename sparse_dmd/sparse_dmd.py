@@ -4,6 +4,7 @@
 # Start of run_dmdsp
 from collections import namedtuple
 import functools
+import math
 
 import numpy as np
 import scipy.linalg as linalg
@@ -385,9 +386,8 @@ class SparseDMD(object):
         potrs, = linalg.get_lapack_funcs(('potrs',), arrays=(C, q))
 
         # simple norm of a 1d vector
-        # TODO: try math.sqrt - should be faster as we are passing a scalar
-        # see comments on http://stackoverflow.com/questions/6802577
-        norm = lambda x: np.sqrt(np.dot(x.conj(), x).real)
+        # math.sqrt faster than np.sqrt because only scalar input
+        norm = lambda x: math.sqrt(np.dot(x.conj(), x).real)
 
         # square root outside of the loop
         root_n = np.sqrt(self.n)
