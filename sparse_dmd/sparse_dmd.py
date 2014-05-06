@@ -7,6 +7,7 @@ import functools
 
 import numpy as np
 import scipy.linalg as linalg
+import scipy.io
 import matplotlib.pyplot as plt
 
 
@@ -682,3 +683,24 @@ class SparsePlots(object):
         ax.set_xlabel('number of dmd modes')
         ax.set_ylabel('performance loss (%)')
         ax.axis([Nz[-1], Nz[0], 0, 1.05 * Ploss[-1]])
+
+
+if __name__ == '__main__':
+    import time
+    channel_mat = 'matlab/codes/channel/channel.mat'
+
+    mat_dict = scipy.io.loadmat(channel_mat)
+
+    UstarX1 = mat_dict['UstarX1']
+    S = mat_dict['S']
+    V = mat_dict['V']
+
+    # Sparsity-promoting parameter gamma
+    # Lower and upper bounds relevant for this flow type
+    gamma_grd = 20
+    gammaval = np.logspace(np.log10(0.15), np.log10(160), gamma_grd)
+
+    tic = time.time()
+    Fdmd, Edmd, Ydmd, xdmd, py_answer = run_dmdsp(UstarX1, S, V, gammaval)
+    toc = time.time()
+    print "time elapsed: ", toc - tic
