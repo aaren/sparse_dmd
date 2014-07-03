@@ -517,7 +517,7 @@ class SparseReconstruction(object):
 
     TODO: think about a gamma search function?
     """
-    def __init__(self, sparse_dmd, number_index, data=None, decomp_axis=1):
+    def __init__(self, sparse_dmd, number_index, shape=None, decomp_axis=1):
         """
         sparse_dmd - a SparseDMD instance with the sparse solution computed
 
@@ -532,7 +532,7 @@ class SparseReconstruction(object):
         self.nmodes = self.dmd.sparse.Nz[number_index]
         self.Ni = number_index
 
-        self.data = data
+        self.data_shape = shape
         self.decomp_axis = decomp_axis
 
         self.rdata = self.sparse_reconstruction()
@@ -567,9 +567,9 @@ class SparseReconstruction(object):
                                          np.dot(amplitudes,
                                                 time_series)).real
 
-        if self.data is not None:
+        if self.data_shape is not None:
             data_reconstruction = to_data(snapshot_reconstruction,
-                                          self.data.shape,
+                                          self.data_shape,
                                           self.decomp_axis)
             return data_reconstruction
         else:
