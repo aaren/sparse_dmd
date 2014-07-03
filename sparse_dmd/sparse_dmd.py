@@ -40,7 +40,8 @@ def to_data(snapshots, shape, decomp_axis=-1):
 
 
 def run_dmdsp(UstarX1, S, V, gammaval):
-    """
+    """Emulates behaviour of run_dmdsp in the matlab source.
+
     Inputs: matrices U'*X1, S, and V (for a specified flow type)
 
     Outputs:
