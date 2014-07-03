@@ -349,7 +349,7 @@ class SparseDMD(object):
     def admm(self, z, y, gamma):
         """Alternating direction method of multipliers."""
         # Optimization:
-        # This has been resonably optimized already and performs ~3x
+        # This has been reasonably optimized already and performs ~3x
         # faster than a naive translation of the matlab version.
 
         # Two major changes are a custom function for calculating
