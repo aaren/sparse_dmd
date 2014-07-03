@@ -15,9 +15,9 @@ represent the data.
 The sparse DMD (Jovanovic et al, 2014) aims to find a reduced number
 of dynamic modes that best represent the data.
 
-Based on matlab source from
+This is a Python version of the reference [matlab source][matlab_source].
 
-http://www.ece.umn.edu/users/mihailo//software/dmdsp/download.html
+[matlab_source]: http://www.ece.umn.edu/users/mihailo//software/dmdsp/download.html
 
 
 ### Usage
