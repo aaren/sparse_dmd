@@ -113,3 +113,18 @@ innermost loop.
 
 Very welcome, especially for performance! Just create an issue /
 open a pull request.
+
+
+### How did I translate this?
+
+1. Take the matlab source and form a single `.m` file that
+   contains the entire program in imperative form.
+
+2. Go through this file line by line, writing the equivalent
+   Python and checking that the intermediate results are
+   the same in both Python and MATLAB.
+
+3. Write a simple test, comparing the output of both matlab and
+   python with the same input data.
+
+4. Refactor the Python program, using the test to avoid mistakes.
