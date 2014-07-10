@@ -66,11 +66,12 @@ def run_dmdsp(UstarX1, S, V, gammaval):
 
 
 class DMD(object):
-    def __init__(self, snapshots=None):
+    def __init__(self, snapshots=None, dt=1):
         """Dynamic Mode Decomposition with optimal amplitudes.
 
         Arguments
             snapshots - the matrix of snapshots
+            dt - time interval between snapshots
 
         Methods
             compute - perform the decomposition on the snapshots and
@@ -82,9 +83,11 @@ class DMD(object):
         Attributes
             modes - the dmd modes
             amplitudes - corresponding optimal amplitudes
-            ritz_values - corresponding frequencies
+            ritz_values - corresponding ritz values
+            frequencies - corresponding frequencies
         """
         self.snapshots = snapshots
+        self.dt = dt
         self.computed = False
 
     def compute(self):
@@ -93,6 +96,7 @@ class DMD(object):
 
         self.modes = np.dot(reduction.U, self.Ydmd)
         self.ritz_values = self.Edmd
+        self.frequencies = np.log(self.ritz_values) / self.dt
         # the optimal amplitudes
         self.amplitudes = self.xdmd
         self.computed = True
