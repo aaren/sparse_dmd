@@ -633,12 +633,13 @@ def subplot(plot_function):
 
 class SparsePlots(object):
     def __init__(self, sparsedmd):
+        self.dmd = sparsedmd.dmd
         self.sparsedmd = sparsedmd
 
-        self.xdmd = sparsedmd.xdmd
-        self.Ydmd = sparsedmd.Ydmd
-        self.Edmd = sparsedmd.Edmd
-        self.Fdmd = sparsedmd.Fdmd
+        self.xdmd = self.dmd.xdmd
+        self.Ydmd = self.dmd.Ydmd
+        self.Edmd = self.dmd.Edmd
+        self.Fdmd = self.dmd.Fdmd
 
         self.sparse = sparsedmd.sparse
 
