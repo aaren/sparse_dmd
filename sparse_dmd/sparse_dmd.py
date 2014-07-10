@@ -65,46 +65,6 @@ def run_dmdsp(UstarX1, S, V, gammaval):
     return Fdmd, Edmd, Ydmd, xdmd, answer
 
 
-class SparseAnswer(object):
-    """A set of results from sparse dmd optimisation.
-
-    Attributes:
-    gamma     the parameter vector
-    nz        number of non-zero amplitudes
-    nonzero   where modes are nonzero
-    jsp       square of frobenius norm (before polishing)
-    jpol      square of frobenius norm (after polishing)
-    ploss     optimal performance loss (after polishing)
-    xsp       vector of sparse amplitudes (before polishing)
-    xpol      vector of amplitudes (after polishing)
-    """
-    def __init__(self, n, ng):
-        """Create an empty sparse dmd answer.
-
-        n - number of optimization variables
-        ng - length of parameter vector
-        """
-        # the parameter vector
-        self.gamma = np.zeros(ng)
-        # number of non-zero amplitudes
-        self.Nz = np.zeros(ng)
-        # square of frobenius norm (before polishing)
-        self.Jsp = np.zeros(ng, dtype=np.complex)
-        # square of frobenius norm (after polishing)
-        self.Jpol = np.zeros(ng, dtype=np.complex)
-        # optimal performance loss (after polishing)
-        self.Ploss = np.zeros(ng, dtype=np.complex)
-        # vector of amplitudes (before polishing)
-        self.xsp = np.zeros((n, ng), dtype=np.complex)
-        # vector of amplitudes (after polishing)
-        self.xpol = np.zeros((n, ng), dtype=np.complex)
-
-    @property
-    def nonzero(self):
-        """where amplitudes are nonzero"""
-        return self.xsp != 0
-
-
 class DMD(object):
     def __init__(self, snapshots=None):
         """Dynamic Mode Decomposition with optimal amplitudes.
@@ -529,6 +489,46 @@ class SparseDMD(object):
         r.ploss   # performance loss
         """
         self.reconstruction = SparseReconstruction(self, Ni, data, decomp_axis)
+
+
+class SparseAnswer(object):
+    """A set of results from sparse dmd optimisation.
+
+    Attributes:
+    gamma     the parameter vector
+    nz        number of non-zero amplitudes
+    nonzero   where modes are nonzero
+    jsp       square of frobenius norm (before polishing)
+    jpol      square of frobenius norm (after polishing)
+    ploss     optimal performance loss (after polishing)
+    xsp       vector of sparse amplitudes (before polishing)
+    xpol      vector of amplitudes (after polishing)
+    """
+    def __init__(self, n, ng):
+        """Create an empty sparse dmd answer.
+
+        n - number of optimization variables
+        ng - length of parameter vector
+        """
+        # the parameter vector
+        self.gamma = np.zeros(ng)
+        # number of non-zero amplitudes
+        self.Nz = np.zeros(ng)
+        # square of frobenius norm (before polishing)
+        self.Jsp = np.zeros(ng, dtype=np.complex)
+        # square of frobenius norm (after polishing)
+        self.Jpol = np.zeros(ng, dtype=np.complex)
+        # optimal performance loss (after polishing)
+        self.Ploss = np.zeros(ng, dtype=np.complex)
+        # vector of amplitudes (before polishing)
+        self.xsp = np.zeros((n, ng), dtype=np.complex)
+        # vector of amplitudes (after polishing)
+        self.xpol = np.zeros((n, ng), dtype=np.complex)
+
+    @property
+    def nonzero(self):
+        """where amplitudes are nonzero"""
+        return self.xsp != 0
 
 
 class SparseReconstruction(object):
