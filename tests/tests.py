@@ -95,7 +95,7 @@ def test_compare_inputs():
     snapshots = scipy.io.loadmat('tests/snapshots.mat')['snapshots']
 
     # compute the python reduction
-    py_data = sparse_dmd.SparseDMD.dmd_reduction(snapshots)
+    py_data = sparse_dmd.DMD.dmd_reduction(snapshots)
 
     # load reference matlab output
     mat_data = scipy.io.loadmat('tests/reference.mat')

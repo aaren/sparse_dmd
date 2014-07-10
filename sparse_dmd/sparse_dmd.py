@@ -53,12 +53,12 @@ def run_dmdsp(UstarX1, S, V, gammaval):
     answer - gamma-parameterized structure containing output of dmdsp
     """
     spdmd = SparseDMD()
-    spdmd.init_dmd(UstarX1, S, V)
+    spdmd.dmd.init(UstarX1, S, V)
 
-    Fdmd = spdmd.Fdmd
-    Ydmd = spdmd.Ydmd
-    Edmd = spdmd.Edmd
-    xdmd = spdmd.xdmd
+    Fdmd = spdmd.dmd.Fdmd
+    Ydmd = spdmd.dmd.Ydmd
+    Edmd = spdmd.dmd.Edmd
+    xdmd = spdmd.dmd.xdmd
 
     answer = spdmd.dmdsp(gammaval)
 
@@ -105,44 +105,35 @@ class SparseAnswer(object):
         return self.xsp != 0
 
 
-class SparseDMD(object):
-    def __init__(self, snapshots=None, rho=1, maxiter=10000,
-                 eps_abs=1e-6, eps_rel=1e-4):
-        # TODO: allow data, decomp_axis as an argument instead of snapshots
-        """Sparse Dynamic Mode Decomposition, using ADMM to find a
-        sparse set of optimal dynamic mode amplitudes
+class DMD(object):
+    def __init__(self, snapshots=None):
+        """Dynamic Mode Decomposition with optimal amplitudes.
 
-        Inputs:
-            snapshots - the matrix of data snapshots, shape (d, N)
-                        where N is the number of snapshots and d is
-                        the number of data points in a snapshot.
-            rho     - augmented Lagrangian parameter
-            maxiter - maximum number of ADMM iterations
-            eps_abs - absolute tolerance for ADMM
-            eps_rel - relative tolerance for ADMM
+        Arguments
+            snapshots - the matrix of snapshots
 
-        Defaults:
-            If snapshots is not supplied and you have precomputed
-            the dmd reduction [U^*X1, S, V], you can initialise the
-            dmd with SparseDMD.init_dmd(U^*X1, S, V).
+        Methods
+            compute - perform the decomposition on the snapshots and
+                      calculate the modes, frequencies and amplitudes
+            dmd_reduction - compute the matrices U*X1, S and V that
+                            represent the input snapshots
+            init - perform the dmd computation given a reduction
 
-            rho = 1
-            maxiter = 10000
-            eps_abs = 1.e-6
-            eps_rel = 1.e-4
+        Attributes
+            modes - the dmd modes
+            amplitudes - corresponding optimal amplitudes
+            ritz_values - corresponding frequencies
         """
-        self.rho = rho
-        self.max_admm_iter = maxiter
-        self.eps_abs = eps_abs
-        self.eps_rel = eps_rel
+        self.snapshots = snapshots
 
-        if snapshots is not None:
-            self.snapshots = snapshots
-            reduction = self.dmd_reduction(snapshots)
-            self.init_dmd(reduction.UstarX1, reduction.S, reduction.V)
-            # the (unit-norm) dynamic modes are the projection of
-            # the eigenvectors Y onto the POD basis U
-            self.modes = np.dot(reduction.U, self.Ydmd)
+    def compute(self):
+        reduction = self.dmd_reduction(self.snapshots)
+        self.init(reduction.UstarX1, reduction.S, reduction.V)
+
+        self.modes = np.dot(reduction.U, self.Ydmd)
+        self.ritz_values = self.Edmd
+        # the optimal amplitudes
+        self.amplitudes = self.xdmd
 
     @property
     def reduction(self):
@@ -196,7 +187,7 @@ class SparseDMD(object):
 
         return Reduction(UstarX1=UstarX1, S=S, V=V, U=U, X0=X0, X1=X1)
 
-    def init_dmd(self, UstarX1=None, S=None, V=None):
+    def init(self, UstarX1=None, S=None, V=None):
         """Calculate the DMD matrix from the data reduction."""
         if UstarX1 is not None:
             self.UstarX1 = UstarX1
@@ -252,6 +243,45 @@ class SparseDMD(object):
         # Optimal vector of amplitudes xdmd
         self.xdmd = linalg.solve(Pl.T.conj(), linalg.solve(Pl, self.q))
 
+
+class SparseDMD(object):
+    def __init__(self, snapshots=None, rho=1, maxiter=10000,
+                 eps_abs=1e-6, eps_rel=1e-4):
+        # TODO: allow data, decomp_axis as an argument instead of snapshots
+        """Sparse Dynamic Mode Decomposition, using ADMM to find a
+        sparse set of optimal dynamic mode amplitudes
+
+        Inputs:
+            snapshots - the matrix of data snapshots, shape (d, N)
+                        where N is the number of snapshots and d is
+                        the number of data points in a snapshot.
+            rho     - augmented Lagrangian parameter
+            maxiter - maximum number of ADMM iterations
+            eps_abs - absolute tolerance for ADMM
+            eps_rel - relative tolerance for ADMM
+
+        Defaults:
+            If snapshots is not supplied and you have precomputed
+            the dmd reduction [U^*X1, S, V], you can initialise the
+            dmd with SparseDMD.dmd.init(U^*X1, S, V).
+
+            rho = 1
+            maxiter = 10000
+            eps_abs = 1.e-6
+            eps_rel = 1.e-4
+        """
+        self.rho = rho
+        self.max_admm_iter = maxiter
+        self.eps_abs = eps_abs
+        self.eps_rel = eps_rel
+
+        if snapshots is not None:
+            self.dmd = DMD(snapshots)
+            self.dmd.compute()
+
+        elif not snapshots:
+            self.dmd = DMD()
+
     def compute_dmdsp(self, gammaval):
         """Compute the sparse dmd structure and set as attribute."""
         self.gammaval = gammaval
@@ -276,11 +306,11 @@ class SparseDMD(object):
         http://www.umn.edu/~mihailo/software/dmdsp/
         """
         # Number of optimization variables
-        self.n = len(self.q)
+        self.n = len(self.dmd.q)
         # length of parameter vector
         ng = len(gammaval)
 
-        self.Prho = self.P + (self.rho / 2.) * np.identity(self.n)
+        self.Prho = self.dmd.P + (self.rho / 2.) * np.identity(self.n)
 
         answer = SparseAnswer(self.n, ng)
         answer.gamma = gammaval
@@ -337,7 +367,8 @@ class SparseDMD(object):
         # Polished (optimal) least-squares residual
         polished_residual = self.residuals(xpol)
         # Polished (optimal) performance loss
-        polished_performance_loss = 100 * np.sqrt(polished_residual / self.s)
+        polished_performance_loss = 100 * \
+            np.sqrt(polished_residual / self.dmd.s)
 
         return {'xsp':   sparse_amplitudes,
                 'Nz':    num_nonzero,
@@ -378,7 +409,7 @@ class SparseDMD(object):
         #   the other watching for convergence.
 
         a = (gamma / self.rho) * np.ones(self.n)
-        q = self.q
+        q = self.dmd.q
 
         # precompute cholesky decomposition
         C = linalg.cholesky(self.Prho, lower=False)
@@ -451,10 +482,10 @@ class SparseDMD(object):
         # and stask using scipy.sparse.{hstack, vstack}
 
         # Form KKT system for the optimality conditions
-        KKT = np.vstack((np.hstack((self.P, E)),
+        KKT = np.vstack((np.hstack((self.dmd.P, E)),
                          np.hstack((E.T.conj(), np.zeros((m, m))))
                          ))
-        rhs = np.hstack((self.q, np.zeros(m)))
+        rhs = np.hstack((self.dmd.q, np.zeros(m)))
 
         # Solve KKT system
         return linalg.solve(KKT, rhs)
@@ -465,13 +496,13 @@ class SparseDMD(object):
         """
         # conjugate transpose
         x_ = x.T.conj()
-        q_ = self.q.T.conj()
+        q_ = self.dmd.q.T.conj()
 
-        x_P = np.dot(x_, self.P)
+        x_P = np.dot(x_, self.dmd.P)
         x_Px = np.dot(x_P, x)
         q_x = np.dot(q_, x)
 
-        return x_Px.real - 2 * q_x.real + self.s
+        return x_Px.real - 2 * q_x.real + self.dmd.s
 
     def compute_sparse_reconstruction(self, Ni, data=None, decomp_axis=1):
         """Compute a reconstruction of the input data based on a sparse
@@ -527,9 +558,10 @@ class SparseReconstruction(object):
         data - the original input data. If not supplied, the original
                snapshots will be reconstructed.
         """
-        self.dmd = sparse_dmd
+        self.dmd = sparse_dmd.dmd
+        self.sparse_dmd = sparse_dmd
 
-        self.nmodes = self.dmd.sparse.Nz[number_index]
+        self.nmodes = self.sparse_dmd.Nz[number_index]
         self.Ni = number_index
 
         self.data_shape = shape
@@ -537,12 +569,12 @@ class SparseReconstruction(object):
 
         self.rdata = self.sparse_reconstruction()
 
-        nonzero = self.dmd.sparse.nonzero[:, number_index]
+        nonzero = self.sparse_dmd.nonzero[:, number_index]
 
         self.modes = self.dmd.modes[:, nonzero]
         self.freqs = self.dmd.Edmd[nonzero]
-        self.amplitudes = self.dmd.sparse.xpol[nonzero, number_index]
-        self.ploss = self.dmd.sparse.Ploss[number_index]
+        self.amplitudes = self.sparse_dmd.xpol[nonzero, number_index]
+        self.ploss = self.sparse_dmd.Ploss[number_index]
 
     def sparse_reconstruction(self):
         """Reconstruct the snapshots using a given number of modes.
