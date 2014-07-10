@@ -36,18 +36,34 @@ u = load_some_data()
 snapshots = sparse_dmd.to_snaps(u, decomp_axis=-1)
 
 # create and compute the standard dmd
-dmd = sparse_dmd.SparseDMD(snapshots)
+dmd = sparse_dmd.DMD(snapshots)
+dmd.compute()
+```
+
+We can access the dynamic modes, ritz values and (optimal)
+amplitudes as attributes on this object:
+
+```python
+# the dynamic modes
+dmd.modes
+# the optimal amplitudes
+dmd.amplitudes
+# the ritz values
+dmd.ritz_values
 ```
 
 Now we can compute the sparse dmd, given some parameterisation
 range:
 
 ```python
+# initialise the sparse dmd (can also do directly from snapshots)
+spdmd = sparse_dmd.SparseDMD(dmd=dmd)
+
 # create range of sparsity parameterisation
 gamma = np.logspace(-2, 6, 200)
 
 # compute the sparse dmd using this gamma range
-dmd.compute_sparse(gamma)
+spdmd.compute_sparse(gamma)
 ```
 
 You may have to tweak the range of `gamma` manually, until it nicely
@@ -56,7 +72,7 @@ covers your data.
 You can now access the results of the sparsity computation:
 
 ```python
-# optimal mode amplitudes
+# polished optimal mode amplitudes
 optimal_amplitudes = dmd.sparse.xpol
 
 # number of non-zero amplitudes

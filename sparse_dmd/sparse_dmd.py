@@ -125,6 +125,7 @@ class DMD(object):
             ritz_values - corresponding frequencies
         """
         self.snapshots = snapshots
+        self.computed = False
 
     def compute(self):
         reduction = self.dmd_reduction(self.snapshots)
@@ -134,6 +135,7 @@ class DMD(object):
         self.ritz_values = self.Edmd
         # the optimal amplitudes
         self.amplitudes = self.xdmd
+        self.computed = True
 
     @property
     def reduction(self):
@@ -245,7 +247,7 @@ class DMD(object):
 
 
 class SparseDMD(object):
-    def __init__(self, snapshots=None, rho=1, maxiter=10000,
+    def __init__(self, snapshots=None, dmd=None, rho=1, maxiter=10000,
                  eps_abs=1e-6, eps_rel=1e-4):
         # TODO: allow data, decomp_axis as an argument instead of snapshots
         """Sparse Dynamic Mode Decomposition, using ADMM to find a
@@ -278,8 +280,9 @@ class SparseDMD(object):
         if snapshots is not None:
             self.dmd = DMD(snapshots)
             self.dmd.compute()
-
-        elif not snapshots:
+        elif not snapshots and dmd is not None:
+            self.dmd = dmd
+        elif not snapshots and not dmd:
             self.dmd = DMD()
 
     def compute_sparse(self, gammaval):
