@@ -282,7 +282,7 @@ class SparseDMD(object):
         elif not snapshots:
             self.dmd = DMD()
 
-    def compute_dmdsp(self, gammaval):
+    def compute_sparse(self, gammaval):
         """Compute the sparse dmd structure and set as attribute."""
         self.gammaval = gammaval
         self.sparse = self.dmdsp(gammaval)

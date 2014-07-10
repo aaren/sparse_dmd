@@ -47,7 +47,7 @@ range:
 gamma = np.logspace(-2, 6, 200)
 
 # compute the sparse dmd using this gamma range
-dmd.compute_dmdsp(gamma)
+dmd.compute_sparse(gamma)
 ```
 
 You may have to tweak the range of `gamma` manually, until it nicely
