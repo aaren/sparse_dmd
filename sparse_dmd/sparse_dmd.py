@@ -403,7 +403,10 @@ class SparseDMD(object):
 
             ### z-minimization step (beta minimisation)
             v = xnew + (1 / self.rho) * y
-            # Soft-thresholding of v (zero for |v| < a)
+            # Soft-thresholding of v
+            # zero for |v| < a
+            # v - a for v > a
+            # v + a for v < -a
             abs_v = np.abs(v)
             znew = ((1 - a / abs_v) * v) * (abs_v > a)
             ###
