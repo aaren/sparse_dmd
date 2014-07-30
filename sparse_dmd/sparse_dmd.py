@@ -738,7 +738,7 @@ if __name__ == '__main__':
 
     # Sparsity-promoting parameter gamma
     # Lower and upper bounds relevant for this flow type
-    gamma_grd = 20
+    gamma_grd = 200
     gammaval = np.logspace(np.log10(0.15), np.log10(160), gamma_grd)
 
     tic = time.time()
