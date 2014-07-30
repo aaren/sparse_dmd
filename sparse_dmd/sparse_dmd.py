@@ -566,7 +566,7 @@ class SparseReconstruction(object):
                snapshots will be reconstructed.
         """
         self.dmd = sparse_dmd.dmd
-        self.sparse_dmd = sparse_dmd
+        self.sparse_dmd = sparse_dmd.sparse
 
         self.nmodes = self.sparse_dmd.Nz[number_index]
         self.Ni = number_index
@@ -594,7 +594,7 @@ class SparseReconstruction(object):
         snapshots will be reshaped to the original data dimensions,
         assuming that they were decomposed along axis `decomp_axis`.
         """
-        amplitudes = np.diag(self.dmd.sparse.xpol[:, self.Ni])
+        amplitudes = np.diag(self.sparse_dmd.xpol[:, self.Ni])
         modes = self.dmd.modes
         time_series = self.dmd.Vand
 
