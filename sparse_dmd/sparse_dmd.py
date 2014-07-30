@@ -386,7 +386,7 @@ class SparseDMD(object):
 
         # simple norm of a 1d vector
         # math.sqrt faster than np.sqrt because only scalar input
-        norm = lambda x: math.sqrt(np.dot(x.conj(), x).real)
+        def norm(x): return math.sqrt(np.dot(x.conj(), x).real)
 
         # square root outside of the loop
         root_n = np.sqrt(self.n)
