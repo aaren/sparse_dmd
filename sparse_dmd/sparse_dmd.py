@@ -445,11 +445,11 @@ class SparseDMD(object):
         # Form the constraint matrix E for E^T x = 0
         E = np.identity(self.n)[:, ind_zero].squeeze()
         # n.b. we don't form the sparse matrix as the original
-        # matlab does as it doesn't seem to have any affect on the
+        # matlab does as it doesn't seem to affect the
         # computation speed or the output.
         # If you want to use a sparse matrix, use the
         # scipy.sparse.linalg.spsolve solver with a csc matrix
-        # and stask using scipy.sparse.{hstack, vstack}
+        # and stack using scipy.sparse.{hstack, vstack}
 
         # Form KKT system for the optimality conditions
         KKT = np.vstack((np.hstack((self.dmd.P, E)),
