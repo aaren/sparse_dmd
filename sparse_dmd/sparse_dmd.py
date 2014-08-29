@@ -374,7 +374,7 @@ class SparseDMD(object):
         # - use two cores, with one core performing the admm and
         #   the other watching for convergence.
 
-        a = (gamma / self.rho) * np.ones(self.n)
+        a = (gamma / self.rho)
         q = self.dmd.q
 
         # precompute cholesky decomposition
@@ -405,6 +405,9 @@ class SparseDMD(object):
             # zero for |v| < a
             # v - a for v > a
             # v + a for v < -a
+            # n.b. This doesn't actually do this because v is
+            # complex. This is the same as the matlab source. You might
+            # want to use np.sign, but this won't work because v is complex.
             abs_v = np.abs(v)
             znew = ((1 - a / abs_v) * v) * (abs_v > a)
             ###
