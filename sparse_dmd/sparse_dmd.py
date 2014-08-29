@@ -4,7 +4,6 @@
 # Start of run_dmdsp
 from collections import namedtuple
 import functools
-import math
 
 import numpy as np
 import scipy.linalg as linalg
@@ -384,9 +383,8 @@ class SparseDMD(object):
         # definite symmetric system with precomputed cholesky decomp:
         potrs, = linalg.get_lapack_funcs(('potrs',), arrays=(C, q))
 
-        # simple norm of a 1d vector
-        # math.sqrt faster than np.sqrt because only scalar input
-        def norm(x): return math.sqrt(np.dot(x.conj(), x).real)
+        # simple norm of a 1d vector, called directly from BLAS
+        norm, = linalg.get_blas_funcs(('nrm2',), arrays=(q,))
 
         # square root outside of the loop
         root_n = np.sqrt(self.n)
