@@ -477,15 +477,15 @@ class SparseDMD(object):
 
         return x_Px.real - 2 * q_x.real + self.dmd.s
 
-    def compute_sparse_reconstruction(self, Ni, data=None, decomp_axis=1):
+    def compute_sparse_reconstruction(self, Ni, shape=None, decomp_axis=1):
         """Compute a reconstruction of the input data based on a sparse
         selection of modes.
 
         Ni - the index that selects the desired number of
              modes in self.sparse.Nz
 
-        data - the original input data. If not supplied, the original
-               snapshots will be reconstructed.
+        shape - the shape of the original input data. If not supplied,
+                the original snapshots will be reconstructed.
 
         Once computed, the reconstruction is available as
         self.reconstruction and has the following attributes:
