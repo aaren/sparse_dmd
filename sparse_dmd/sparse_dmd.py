@@ -431,6 +431,8 @@ class SparseDMD(object):
             else:
                 z = znew
 
+        return z
+
     def KKT_solve(self, z):
         """Polishing of the sparse vector z. Seeks solution to
         E^T z = 0
