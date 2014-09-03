@@ -1,3 +1,5 @@
+*This tool is in development. The API may change! If you raise an issue I will most likely respond :)*
+
 ## Sparse DMD in Python
 
 The Dynamic Mode Decomposition is a tool for analysing spatially
