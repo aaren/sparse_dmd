@@ -201,12 +201,11 @@ class DMD(object):
         self.q = np.diagonal(np.dot(np.dot(R, G.T.conj()), L)).conj()
         self.s = np.trace(np.dot(G.T.conj(), G))
 
-        # Cholesky factorization of P
-        # (more efficient way of computing x = P^(-1) q, when P is
-        # hermitian positive definite matrix, which it is)
-        Pl = linalg.cholesky(self.P, lower=True)
         # Optimal vector of amplitudes xdmd
-        self.xdmd = linalg.solve(Pl.T.conj(), linalg.solve(Pl, self.q))
+        # computed by cholesky factorization of P (more efficient
+        # way of computing x = P^(-1) q, as P is hermitian positive
+        # definite matrix) === solve(Pl.T.conj(), solve(Pl, self.q))
+        self.xdmd = linalg.cho_solve(linalg.cho_factor(self.P), self.q)
 
 
 class SparseDMD(object):
