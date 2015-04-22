@@ -8,7 +8,7 @@ config = {
         'author': "Aaron O'Leary",
         'url': 'http://github.com/aaren/sparse_dmd',
         'author_email': 'eeaol@leeds.ac.uk',
-        'version': '0.1',
+        'version': '0.2',
         'packages': ['sparse_dmd'],
         'scripts': [],
         'name': 'sparse_dmd',
