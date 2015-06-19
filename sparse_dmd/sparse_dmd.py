@@ -497,7 +497,7 @@ class SparseDMD(object):
         r.amplitudes  # corresponding amplitudes
         r.ploss   # performance loss
         """
-        self.reconstruction = SparseReconstruction(self, Ni, data, decomp_axis)
+        self.reconstruction = SparseReconstruction(self, Ni, shape, decomp_axis)
 
 
 class SparseAnswer(object):
