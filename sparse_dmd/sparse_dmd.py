@@ -486,8 +486,7 @@ class SparseDMD(object):
         shape - the shape of the original input data. If not supplied,
                 the original snapshots will be reconstructed.
 
-        Once computed, the reconstruction is available as
-        self.reconstruction and has the following attributes:
+        Returns a SparseReconstruction with the following attributes:
 
         r.nmodes  # number of modes (3)
         r.data    # the original data
@@ -497,7 +496,7 @@ class SparseDMD(object):
         r.amplitudes  # corresponding amplitudes
         r.ploss   # performance loss
         """
-        self.reconstruction = SparseReconstruction(self, Ni, shape, decomp_axis)
+        return SparseReconstruction(self, Ni, shape, decomp_axis)
 
 
 class SparseAnswer(object):
