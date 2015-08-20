@@ -11,30 +11,30 @@ import scipy.io
 import matplotlib.pyplot as plt
 
 
-def to_snaps(data, decomp_axis=-1):
-    """Transform data into snapshots, using decomp_axis as
+def to_snaps(data, axis=-1):
+    """Transform data into snapshots, using axis as
     the decomposition axis.
     """
-    sd = data.shape[decomp_axis]   # size of the decomp axis
+    sd = data.shape[axis]   # size of the decomp axis
     shape_idx = range(len(data.shape))
-    # we reset the value of decomp_axis to allow indexing with -1
-    decomp_axis = shape_idx.pop(decomp_axis)
+    # we reset the value of axis to allow indexing with -1
+    axis = shape_idx.pop(axis)
     # put the decomp axis last and reshape to 2d array
-    return data.transpose(shape_idx + [decomp_axis]).reshape((-1, sd))
+    return data.transpose(shape_idx + [axis]).reshape((-1, sd))
 
 
-def to_data(snapshots, shape, decomp_axis=-1):
+def to_data(snapshots, shape, axis=-1):
     """Reshape snapshots or modes to match data that
-    had a `shape` and that was decomposed along `decomp_axis`.
+    had a `shape` and that was decomposed along `axis`.
     """
     shape = list(shape)
-    shape.pop(decomp_axis)  # remove decomp axis (it is implicitly last)
+    shape.pop(axis)  # remove decomp axis (it is implicitly last)
     reshaped = np.asarray(snapshots).reshape(shape + [-1])
 
     rshape = list(reshaped.shape)
     irshape = range(len(rshape))  # indices of array shape
     id = irshape.pop(-1)  # pull out index of decomp axis
-    irshape.insert(decomp_axis, id)  # and insert where it came from
+    irshape.insert(axis, id)  # and insert where it came from
     return reshaped.transpose(irshape)
 
 
@@ -211,7 +211,7 @@ class DMD(object):
 class SparseDMD(object):
     def __init__(self, snapshots=None, dmd=None, rho=1, maxiter=10000,
                  eps_abs=1e-6, eps_rel=1e-4):
-        # TODO: allow data, decomp_axis as an argument instead of snapshots
+        # TODO: allow data, axis as an argument instead of snapshots
         """Sparse Dynamic Mode Decomposition, using ADMM to find a
         sparse set of optimal dynamic mode amplitudes
 
@@ -476,7 +476,7 @@ class SparseDMD(object):
 
         return x_Px.real - 2 * q_x.real + self.dmd.s
 
-    def compute_sparse_reconstruction(self, Ni, shape=None, decomp_axis=1):
+    def compute_sparse_reconstruction(self, Ni, shape=None, axis=1):
         """Compute a reconstruction of the input data based on a sparse
         selection of modes.
 
@@ -496,7 +496,7 @@ class SparseDMD(object):
         r.amplitudes  # corresponding amplitudes
         r.ploss   # performance loss
         """
-        return SparseReconstruction(self, Ni, shape, decomp_axis)
+        return SparseReconstruction(self, Ni, shape, axis)
 
 
 class SparseAnswer(object):
@@ -559,7 +559,7 @@ class SparseReconstruction(object):
 
     TODO: think about a gamma search function?
     """
-    def __init__(self, sparse_dmd, number_index, shape=None, decomp_axis=1):
+    def __init__(self, sparse_dmd, number_index, shape=None, axis=1):
         """
         sparse_dmd - a SparseDMD instance with the sparse solution computed
 
@@ -576,7 +576,7 @@ class SparseReconstruction(object):
         self.Ni = number_index
 
         self.data_shape = shape
-        self.decomp_axis = decomp_axis
+        self.axis = axis
 
         self.rdata = self.sparse_reconstruction()
 
@@ -596,7 +596,7 @@ class SparseReconstruction(object):
         shape is the shape of the original data. If None (default),
         the reconstructed snapshots will be returned; otherwise the
         snapshots will be reshaped to the original data dimensions,
-        assuming that they were decomposed along axis `decomp_axis`.
+        assuming that they were decomposed along axis `axis`.
         """
         amplitudes = np.diag(self.sparse_dmd.xpol[:, self.Ni])
         modes = self.dmd.modes
@@ -613,7 +613,7 @@ class SparseReconstruction(object):
         if self.data_shape is not None:
             data_reconstruction = to_data(snapshot_reconstruction,
                                           self.data_shape,
-                                          self.decomp_axis)
+                                          self.axis)
             return data_reconstruction
         else:
             return snapshot_reconstruction
