@@ -223,8 +223,8 @@ class DMD(object):
 
 
 class SparseDMD(object):
-    def __init__(self, snapshots=None, dmd=None, rho=1, maxiter=10000,
-                 eps_abs=1e-6, eps_rel=1e-4):
+    def __init__(self, snapshots=None, dmd=None, axis=-1, dt=1,
+                 rho=1, maxiter=10000, eps_abs=1e-6, eps_rel=1e-4):
         # TODO: allow data, axis as an argument instead of snapshots
         """Sparse Dynamic Mode Decomposition, using ADMM to find a
         sparse set of optimal dynamic mode amplitudes
@@ -233,6 +233,8 @@ class SparseDMD(object):
             snapshots - the matrix of data snapshots, shape (d, N)
                         where N is the number of snapshots and d is
                         the number of data points in a snapshot.
+            dmd     - optional precomputed DMD instance
+            axis    - decomposition axis, default -1
             rho     - augmented Lagrangian parameter
             maxiter - maximum number of ADMM iterations
             eps_abs - absolute tolerance for ADMM
@@ -254,7 +256,7 @@ class SparseDMD(object):
         self.eps_rel = eps_rel
 
         if snapshots is not None:
-            self.dmd = DMD(snapshots)
+            self.dmd = DMD(snapshots, axis=axis, dt=dt)
             self.dmd.compute()
         elif not snapshots and dmd is not None:
             self.dmd = dmd
