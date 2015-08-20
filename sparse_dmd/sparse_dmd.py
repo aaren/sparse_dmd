@@ -618,6 +618,15 @@ class SparseReconstruction(object):
         else:
             return snapshot_reconstruction
 
+    @property
+    def dmodes(self):
+        """Convenience function to return modes reshaped into original
+        data shape.
+        """
+        return to_data(snapshots=self.modes,
+                       shape=self.data_shape,
+                       decomp_axis=self.decomp_axis)
+
 
 def subplot(plot_function):
     """Wrapper for functions that plot on a matplotlib axes instance
