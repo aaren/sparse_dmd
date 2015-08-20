@@ -608,7 +608,7 @@ class SparseReconstruction(object):
         self.data_shape = shape
         self.axis = axis
 
-        self.rdata = self.sparse_reconstruction()
+        self.rmodes = self.sparse_reconstruction()
 
         nonzero = self.sparse_dmd.nonzero[:, number_index]
 
@@ -636,17 +636,19 @@ class SparseReconstruction(object):
         # in conjugate pairs and should cancel out. They don't
         # exactly because this is an optimal fit, not an exact
         # match.
-        snapshot_reconstruction = np.dot(modes,
-                                         np.dot(amplitudes,
-                                                time_series)).real
+        reconstruction = np.dot(modes, np.dot(amplitudes, time_series))
+        return reconstruction.real
 
+    @property
+    def rdata(self):
+        """Convenience function to return reduced modes reshaped
+        into original data shape.
+        """
         if self.data_shape is not None:
-            data_reconstruction = to_data(snapshot_reconstruction,
+            data_reconstruction = to_data(self.rmodes,
                                           self.data_shape,
                                           self.axis)
             return data_reconstruction
-        else:
-            return snapshot_reconstruction
 
     @property
     def dmodes(self):
@@ -655,7 +657,7 @@ class SparseReconstruction(object):
         """
         return to_data(snapshots=self.modes,
                        shape=self.data_shape,
-                       decomp_axis=self.decomp_axis)
+                       decomp_axis=self.axis)
 
 
 def subplot(plot_function):
