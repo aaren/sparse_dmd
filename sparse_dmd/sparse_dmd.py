@@ -234,8 +234,15 @@ class SparseDMD(object):
             snapshots - the matrix of data snapshots, shape (d, N)
                         where N is the number of snapshots and d is
                         the number of data points in a snapshot.
+
+                        Alternately, multi-dimensional data can be
+                        given here and it will be reshaped into the
+                        snapshot matrix along the given `axis`.
+
             dmd     - optional precomputed DMD instance
+
             axis    - decomposition axis, default -1
+
             rho     - augmented Lagrangian parameter
             maxiter - maximum number of ADMM iterations
             eps_abs - absolute tolerance for ADMM
@@ -576,15 +583,18 @@ class SparseReconstruction(object):
 
     TODO: think about a gamma search function?
     """
-    def __init__(self, sparse_dmd, number_index, shape=None, axis=1):
+    def __init__(self, sparse_dmd, number_index, shape=None, axis=-1):
         """
         sparse_dmd - a SparseDMD instance with the sparse solution computed
 
         number_index - the index that selects the desired number of
                        modes in sparse_dmd.sparse.Nz
 
-        data - the original input data. If not supplied, the original
-               snapshots will be reconstructed.
+        shape - the original input data shape. Used for reshaping the
+                reconstructed snapshots.
+
+        axis - the decomposition axis in the input data. Defaults to
+               -1, i.e. will work with matrix of snapshots.
         """
         self.dmd = sparse_dmd.dmd
         self.sparse_dmd = sparse_dmd.sparse
