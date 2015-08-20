@@ -657,7 +657,7 @@ class SparseReconstruction(object):
         """
         return to_data(snapshots=self.modes,
                        shape=self.data_shape,
-                       decomp_axis=self.axis)
+                       axis=self.axis)
 
 
 def subplot(plot_function):
