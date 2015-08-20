@@ -216,6 +216,11 @@ class DMD(object):
         # definite matrix) === solve(Pl.T.conj(), solve(Pl, self.q))
         self.xdmd = linalg.cho_solve(linalg.cho_factor(self.P), self.q)
 
+    @property
+    def dmodes(self):
+        """Return modes reshaped into original data shape."""
+        return to_data(self.snapshots, shape=self.data_shape, axis=self.axis)
+
 
 class SparseDMD(object):
     def __init__(self, snapshots=None, dmd=None, rho=1, maxiter=10000,
