@@ -220,7 +220,7 @@ class DMD(object):
     @property
     def dmodes(self):
         """Return modes reshaped into original data shape."""
-        return to_data(self.snapshots, shape=self.data_shape, axis=self.axis)
+        return to_data(self.modes, shape=self.data_shape, axis=self.axis)
 
 
 class SparseDMD(object):
