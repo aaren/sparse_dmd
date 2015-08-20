@@ -91,10 +91,11 @@ class DMD(object):
             ritz_values - corresponding ritz values
             frequencies - corresponding frequencies
         """
-        self.data_shape = snapshots.shape
-        self.axis = axis
+        if snapshots is not None:
+            self.data_shape = snapshots.shape
+            self.snapshots = to_snaps(snapshots, axis=axis)
 
-        self.snapshots = to_snaps(snapshots, axis=axis)
+        self.axis = axis
         self.dt = dt
         self.computed = False
 
