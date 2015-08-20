@@ -500,7 +500,7 @@ class SparseDMD(object):
 
         return x_Px.real - 2 * q_x.real + self.dmd.s
 
-    def compute_sparse_reconstruction(self, Ni, shape=None, axis=1):
+    def reconstruction(self, Ni):
         """Compute a reconstruction of the input data based on a sparse
         selection of modes.
 
@@ -520,7 +520,10 @@ class SparseDMD(object):
         r.amplitudes  # corresponding amplitudes
         r.ploss   # performance loss
         """
-        return SparseReconstruction(self, Ni, shape, axis)
+        return SparseReconstruction(self,
+                                    number_index=Ni,
+                                    shape=self.dmd.data_shape,
+                                    axis=self.dmd.axis)
 
 
 class SparseAnswer(object):
