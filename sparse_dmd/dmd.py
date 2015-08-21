@@ -1,10 +1,7 @@
 from collections import namedtuple
-import functools
 
 import numpy as np
 import scipy.linalg as linalg
-import scipy.io
-import matplotlib.pyplot as plt
 
 from . import util
 
