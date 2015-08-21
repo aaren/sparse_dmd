@@ -25,8 +25,8 @@ This is a Python version of the reference [matlab source][matlab_source].
 ### Usage
 
 Assuming that `u` is some 3d array containing 2d velocity data
-through time, we use a convenience method to create the matrix of
-snapshots and compute the standard DMD:
+through time, we can supply a decomposition axis that will transform
+this into a matrix of snapshots and compute the standard DMD:
 
 ```python
 import sparse_dmd
@@ -34,11 +34,8 @@ import sparse_dmd
 # load data
 u = load_some_data()
 
-# create snapshots, using last array axis for decomposition
-snapshots = sparse_dmd.to_snaps(u, decomp_axis=-1)
-
 # create and compute the standard dmd
-dmd = sparse_dmd.DMD(snapshots)
+dmd = sparse_dmd.DMD(u, axis=-1)
 dmd.compute()
 ```
 
@@ -110,13 +107,13 @@ you want (e.g. `Ni=30` here).
 
 ```python
 # compute the reconstruction for gamma[30]
-dmd.compute_sparse_reconstruction(Ni=30, shape=u.shape, decomp_axis=-1)
+reconstruction = dmd.compute_sparse_reconstruction(Ni=30)
 
-reconstructed_data = dmd.reconstruction.rdata
+reconstructed_data = reconstruction.rdata
 
-reduced_set_of_modes = dmd.reconstruction.modes
-reduced_set_of_ritz_values = dmd.reconstruction.freqs
-reduced_set_of_amplitudes = dmd.reconstruction.amplitudes
+reduced_set_of_modes = reconstruction.modes
+reduced_set_of_ritz_values = reconstruction.freqs
+reduced_set_of_amplitudes = reconstruction.amplitudes
 ```
 
 
