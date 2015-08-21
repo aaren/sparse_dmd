@@ -154,10 +154,11 @@ class DMD(object):
 
         # economy size SVD of X0
         U, S, Vh = linalg.svd(X0, full_matrices=False)
-        ## n.b. differences with matlab svd:
-        ## 1. S is a 1d array of diagonal elements
-        ## 2. Vh == V': the matlab version returns V for X = U S V',
-        ##    whereas python returns V'
+        # n.b. differences with matlab svd:
+        # 1. S is a 1d array of diagonal elements
+        # 2. Vh == V': the matlab version returns V for X = U S V',
+        #    whereas python returns V'
+
         S = np.diag(S)
         V = Vh.T.conj()
 
@@ -426,16 +427,16 @@ class SparseDMD(object):
         root_n = np.sqrt(self.n)
 
         for ADMMstep in xrange(self.max_admm_iter):
-            ### x-minimization step (alpha minimisation)
+            # ## x-minimization step (alpha minimisation)
             u = z - (1. / self.rho) * y
             qs = q + (self.rho / 2.) * u
             # Solve P x = qs, using fact that P is hermitian and
             # positive definite and assuming P is well behaved (no
             # inf or nan).
             xnew = potrs(C, qs, lower=False, overwrite_b=False)[0]
-            ###
+            # ##
 
-            ### z-minimization step (beta minimisation)
+            # ## z-minimization step (beta minimisation)
             v = xnew + (1 / self.rho) * y
             # Soft-thresholding of v
             # zero for |v| < a
@@ -446,13 +447,13 @@ class SparseDMD(object):
             # want to use np.sign, but this won't work because v is complex.
             abs_v = np.abs(v)
             znew = ((1 - a / abs_v) * v) * (abs_v > a)
-            ###
+            # ##
 
-            ### Lagrange multiplier update step
+            # ## Lagrange multiplier update step
             y = y + self.rho * (xnew - znew)
-            ###
+            # ##
 
-            ### Test convergence of admm
+            # ## Test convergence of admm
             # Primal and dual residuals
             res_prim = norm(xnew - znew)
             res_dual = self.rho * norm(znew - z)
