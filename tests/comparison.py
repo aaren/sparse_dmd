@@ -1,7 +1,7 @@
 import time
 
 import numpy as np
-import scipy
+import scipy.io
 
 from sparse_dmd import run_dmdsp
 
