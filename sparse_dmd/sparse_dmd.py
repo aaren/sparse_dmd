@@ -1,7 +1,3 @@
-# The entire dmdsp method for the channel example
-# translated line by line from matlab source
-
-# Start of run_dmdsp
 from collections import namedtuple
 import functools
 
