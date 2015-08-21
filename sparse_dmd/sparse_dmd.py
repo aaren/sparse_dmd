@@ -99,8 +99,10 @@ class DMD(object):
         self.dt = dt
         self.computed = False
 
+        self.keep_reduction = True
+
     def compute(self):
-        reduction = self.dmd_reduction(self.snapshots)
+        reduction = self.reduction
         self.init(reduction.UstarX1, reduction.S, reduction.V)
 
         self.modes = np.dot(reduction.U, self.Ydmd)
@@ -113,7 +115,18 @@ class DMD(object):
     @property
     def reduction(self):
         """Compute the reduced form of the data snapshots"""
-        return self.dmd_reduction(self.snapshots)
+        if not hasattr(self, '_reduction') and self.keep_reduction:
+            self._reduction = self.dmd_reduction(self.snapshots)
+            return self._reduction
+        elif hasattr(self, '_reduction'):
+            return self._reduction
+        else:
+            return self.dmd_reduction(self.snapshots)
+
+    @reduction.deleter
+    def reduction(self):
+        if hasattr(self, '_reduction'):
+            del self._reduction
 
     @staticmethod
     def dmd_reduction(snapshots):
