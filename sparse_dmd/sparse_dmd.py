@@ -679,10 +679,9 @@ def subplot(plot_function):
     def f(self, ax=None, **kwargs):
         if ax is None:
             fig, ax = plt.subplots()
-            plot_function(self, ax, **kwargs)
-            return fig
+            return plot_function(self, ax, **kwargs)
         else:
-            plot_function(self, ax, **kwargs)
+            return plot_function(self, ax, **kwargs)
     return f
 
 
