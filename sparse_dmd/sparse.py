@@ -1,7 +1,8 @@
 import numpy as np
 import scipy.linalg as linalg
 
-from .dmd import DMD, to_data
+from .dmd import DMD
+from .util import to_data
 
 
 class SparseDMD(object):

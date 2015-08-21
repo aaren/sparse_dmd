@@ -1,4 +1,5 @@
-from .dmd import DMD, to_data, to_snaps
+from .dmd import DMD
+from .util import to_data, to_snaps
 from .sparse import SparseDMD
 from .plots import SparsePlots
 
