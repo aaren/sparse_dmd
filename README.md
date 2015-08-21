@@ -122,14 +122,14 @@ reduced_set_of_amplitudes = dmd.reconstruction.amplitudes
 
 ### Performance
 
-This is not as fast as the matlab source (~+25% execution time),
-despite my efforts at optimisation of the ADMM method which forms
-the innermost loop.
+Performance is on par with the matlab version when using accelerated
+Anaconda.
 
-On my laptop, using the `channel.mat` example data with a gamma
-parameterisation of `logspace(log10(0.15), log10(160), 200)`, the
-original matlab (with printing supressed) takes 2.5s and the python
-version takes 3.15s (using accelerated Anaconda).
+On a 6 * 2.6GHz Opteron, 32GB machine, using the `channel.mat`
+example data with a gamma parameterisation of `logspace(log10(0.15),
+log10(160), 200)`, the original Matlab (R2012a) (with printing
+supressed) takes 1.60s and this Python version takes 1.55s (using
+accelerated Anaconda).
 
 
 ### Contributing
