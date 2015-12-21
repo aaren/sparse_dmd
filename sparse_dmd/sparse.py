@@ -244,14 +244,14 @@ class SparseDMD(object):
         """
         # indices of zero elements of z (i.e. amplitudes that
         # we are ignoring)
-        ind_zero = np.where(abs(z) < 1E-12)
+        ind_zero = abs(z) < 1E-12
 
         # number of zero elements
-        m = len(ind_zero[0])
+        m = ind_zero.sum()
 
         # Polishing of the nonzero amplitudes
         # Form the constraint matrix E for E^T x = 0
-        E = np.identity(self.n)[:, ind_zero].squeeze()
+        E = np.identity(self.n)[:, ind_zero]
         # n.b. we don't form the sparse matrix as the original
         # matlab does as it doesn't seem to affect the
         # computation speed or the output.
